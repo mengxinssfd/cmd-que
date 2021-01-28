@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "esNext",
+    "sourceMap": false,
+    "experimentalDecorators": true
+  },
+  "lib": [
+    "es6",
+    "ESNext"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "name": "cmd-que",
+  "version": "1.0.0",
+  "description": "command queue",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mengxinssfd/cmd-que.git"
+  },
+  "keywords": [
+    "command",
+    "queue"
+  ],
+  "author": "mengxinssfd",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mengxinssfd/cmd-que/issues"
+  },
+  "homepage": "https://github.com/mengxinssfd/cmd-que#readme",
+  "devDependencies": {
+    "@types/node": "^14.14.22"
+  }
+}
