@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "command queue",
   "main": "index.js",
+  "bin": {
+    "cmd-que": "bin/watch"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

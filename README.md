@@ -1,2 +1,2 @@
 # cmd-que
-commad queue
+command queue
