@@ -40,7 +40,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.execute = exports.findDirBFS = exports.findDir = exports.forEachDir = exports.Debounce = exports.debounce = void 0;
+exports.getParams = exports.execute = exports.findDirBFS = exports.findDir = exports.forEachDir = exports.Debounce = exports.debounce = void 0;
 var fs = require('fs');
 var Path = require('path');
 var childProcess = require('child_process');
@@ -313,4 +313,10 @@ function execute(cmd) {
     });
 }
 exports.execute = execute;
+function getParams() {
+    return process.argv.reduce(function (obj, item) {
+        return obj;
+    }, {});
+}
+exports.getParams = getParams;
 var templateObject_1, templateObject_2;

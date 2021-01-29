@@ -17,7 +17,6 @@ function watch() {
     });
 }
 console.log(process.cwd(), __dirname);
-var templateObject_1;
 /*(async function exec() {
     const cwd = process.cwd();
     const map = {
@@ -31,3 +30,7 @@ var templateObject_1;
         await execute(cmd);
     }
 })();*/
+if (process.argv.some(function (item) { return ["-h", "-help"].includes(item); })) {
+    console.log("\n        -config   \u8BBE\u7F6E\u6240\u5728\u8DEF\u5F84\n    ");
+}
+var templateObject_1;

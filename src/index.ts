@@ -16,7 +16,6 @@ function watch() {
 console.log(process.cwd(), __dirname);
 
 
-
 /*(async function exec() {
     const cwd = process.cwd();
     const map = {
@@ -30,3 +29,10 @@ console.log(process.cwd(), __dirname);
         await execute(cmd);
     }
 })();*/
+
+if (process.argv.some(item => ["-h", "-help"].includes(item))) {
+    console.log(`
+        -config   设置所在路径
+    `)
+}
+

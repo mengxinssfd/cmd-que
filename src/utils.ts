@@ -181,3 +181,10 @@ export async function execute(cmd: string) {
     }
 
 }
+
+export function getParams() {
+    return process.argv.reduce((obj, item) => {
+
+        return obj;
+    }, {})
+}
