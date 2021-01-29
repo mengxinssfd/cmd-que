@@ -76,22 +76,28 @@ async function inputLoop(
 /**
  * 遍历文件夹
  * @param path
+ * @param exclude
  * @param cb
  */
-export async function forEachDir(path: string, cb: (path: string, isDir: boolean) => boolean) {
+export async function forEachDir(path: string, exclude: RegExp[], cb?: (path: string, isDir: boolean) => true | void | Promise<true | void>) {
     try {
         console.log("遍历", path);
         const stats = await fs.statSync(path);
         const isDir = stats.isDirectory();
-        const isContinue = cb(path, isDir);
-        if (!isDir || !isContinue) {
+        const callback = cb || ((path, isDir) => undefined);
+        const isStop = await callback(path, isDir);
+        if (!isDir || isStop) {
             return;
         }
+        const raw = String.raw`${path}`;
+        const isExclude = exclude.some((item) => item.test(raw));
+        if (isExclude) return;
+
 
         const dir = await fs.readdirSync(path);
         for (const d of dir) {
             const p = Path.resolve(path, d);
-            await forEachDir(p, cb);
+            await forEachDir(p, exclude, cb);
         }
     } catch (e) {
         return Promise.reject(e);
@@ -170,9 +176,10 @@ export async function execute(cmd: string) {
     console.log(getTime(), '执行"' + cmd + '"命令...');
     try {
         const {stdout} = await exec(cmd);
-        console.log('\n\n*************************命令输出start*************************');
+        console.log('执行成功!!');
+        // console.log('\n\n*************************命令输出start*************************');
         console.log(stdout);
-        console.log('*************************命令输出end*******************\n\n');
+        // console.log('*************************命令输出end*******************\n\n');
     } catch (e) {
         console.log('执行失败');
         console.log('\n\n*******************************************');
@@ -183,8 +190,10 @@ export async function execute(cmd: string) {
 }
 
 export function getParams() {
-    return process.argv.reduce((obj, item) => {
-
-        return obj;
-    }, {})
+    const params: any = {};
+    process.argv.slice(2).forEach(it => {
+        const sp = it.split("=");
+        params[sp[0].replace("-", "")] = sp[1] || true;
+    });
+    return params;
 }

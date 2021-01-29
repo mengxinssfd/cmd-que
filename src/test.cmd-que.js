@@ -4,8 +4,8 @@ module.exports = {
     /\.git/,
     /\.idea/,
   ],
+  test: /\.styl$/,
   command: [
-    "stylus $FileDir$\\test1.styl",
-    "stylus $FileDir$\\test2.styl",
+    "stylus <$FilePath$> $FileDir$\\$FileNameWithoutAllExtensions$.wxss",
   ]
 };

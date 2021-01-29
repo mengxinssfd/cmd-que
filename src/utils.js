@@ -127,45 +127,53 @@ function inputLoop(tips, conditionFn) {
 /**
  * 遍历文件夹
  * @param path
+ * @param exclude
  * @param cb
  */
-function forEachDir(path, cb) {
+function forEachDir(path, exclude, cb) {
     return __awaiter(this, void 0, void 0, function () {
-        var stats, isDir, isContinue, dir, _i, dir_1, d, p, e_1;
+        var stats, isDir, callback, isStop, raw_1, isExclude, dir, _i, dir_1, d, p, e_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 7, , 8]);
+                    _a.trys.push([0, 8, , 9]);
                     console.log("遍历", path);
                     return [4 /*yield*/, fs.statSync(path)];
                 case 1:
                     stats = _a.sent();
                     isDir = stats.isDirectory();
-                    isContinue = cb(path, isDir);
-                    if (!isDir || !isContinue) {
+                    callback = cb || (function (path, isDir) { return undefined; });
+                    return [4 /*yield*/, callback(path, isDir)];
+                case 2:
+                    isStop = _a.sent();
+                    if (!isDir || isStop) {
                         return [2 /*return*/];
                     }
+                    raw_1 = String.raw(templateObject_1 || (templateObject_1 = __makeTemplateObject(["", ""], ["", ""])), path);
+                    isExclude = exclude.some(function (item) { return item.test(raw_1); });
+                    if (isExclude)
+                        return [2 /*return*/];
                     return [4 /*yield*/, fs.readdirSync(path)];
-                case 2:
+                case 3:
                     dir = _a.sent();
                     _i = 0, dir_1 = dir;
-                    _a.label = 3;
-                case 3:
-                    if (!(_i < dir_1.length)) return [3 /*break*/, 6];
+                    _a.label = 4;
+                case 4:
+                    if (!(_i < dir_1.length)) return [3 /*break*/, 7];
                     d = dir_1[_i];
                     p = Path.resolve(path, d);
-                    return [4 /*yield*/, forEachDir(p, cb)];
-                case 4:
-                    _a.sent();
-                    _a.label = 5;
+                    return [4 /*yield*/, forEachDir(p, exclude, cb)];
                 case 5:
+                    _a.sent();
+                    _a.label = 6;
+                case 6:
                     _i++;
-                    return [3 /*break*/, 3];
-                case 6: return [3 /*break*/, 8];
-                case 7:
+                    return [3 /*break*/, 4];
+                case 7: return [3 /*break*/, 9];
+                case 8:
                     e_1 = _a.sent();
                     return [2 /*return*/, Promise.reject(e_1)];
-                case 8: return [2 /*return*/];
+                case 9: return [2 /*return*/];
             }
         });
     });
@@ -191,7 +199,7 @@ function findDir(path, exclude, cb) {
                     if (!isDir) {
                         return [2 /*return*/, null];
                     }
-                    raw = String.raw(templateObject_1 || (templateObject_1 = __makeTemplateObject(["", ""], ["", ""])), path);
+                    raw = String.raw(templateObject_2 || (templateObject_2 = __makeTemplateObject(["", ""], ["", ""])), path);
                     isExclude = exclude.some(function (item) { return item.test(raw); });
                     if (isExclude) {
                         return [2 /*return*/, null];
@@ -245,7 +253,7 @@ function findDirBFS(path, exclude, cb) {
                                     isDir = stats.isDirectory();
                                     if (!isDir)
                                         return [2 /*return*/, "continue"];
-                                    raw = String.raw(templateObject_2 || (templateObject_2 = __makeTemplateObject(["", ""], ["", ""])), p);
+                                    raw = String.raw(templateObject_3 || (templateObject_3 = __makeTemplateObject(["", ""], ["", ""])), p);
                                     isExclude = exclude.some(function (item) { return item.test(raw); });
                                     if (isExclude)
                                         return [2 /*return*/, "continue"];
@@ -296,9 +304,9 @@ function execute(cmd) {
                     return [4 /*yield*/, exec(cmd)];
                 case 2:
                     stdout = (_a.sent()).stdout;
-                    console.log('\n\n*************************命令输出start*************************');
+                    console.log('执行成功!!');
+                    // console.log('\n\n*************************命令输出start*************************');
                     console.log(stdout);
-                    console.log('*************************命令输出end*******************\n\n');
                     return [3 /*break*/, 4];
                 case 3:
                     e_2 = _a.sent();
@@ -314,9 +322,12 @@ function execute(cmd) {
 }
 exports.execute = execute;
 function getParams() {
-    return process.argv.reduce(function (obj, item) {
-        return obj;
-    }, {});
+    var params = {};
+    process.argv.slice(2).forEach(function (it) {
+        var sp = it.split("=");
+        params[sp[0].replace("-", "")] = sp[1] || true;
+    });
+    return params;
 }
 exports.getParams = getParams;
-var templateObject_1, templateObject_2;
+var templateObject_1, templateObject_2, templateObject_3;
