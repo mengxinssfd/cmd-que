@@ -199,7 +199,6 @@ export async function execute(cmd: string) {
         console.log(e.stdout);
         console.log('*******************************************\n\n');
     }
-
 }
 
 export function getParams() {
