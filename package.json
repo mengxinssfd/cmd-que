@@ -1,5 +1,5 @@
 {
-  "name": "cmd-que",
+  "name": "@mxssfd/cmd-que",
   "version": "1.0.0",
   "description": "command queue",
   "main": "index.js",
