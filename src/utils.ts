@@ -4,6 +4,14 @@ const childProcess = require('child_process');
 const util = require("util");
 const exec = util.promisify(childProcess.exec);
 
+// 获取数据类型
+export function typeOf(target: any): string {
+    const tp = typeof target;
+    if (tp !== 'object') return tp;
+    return Object.prototype.toString.call(target).slice(8, -1).toLowerCase();
+}
+
+
 /**
  * 防抖函数
  * @param callback 回调
@@ -40,7 +48,7 @@ export function Debounce(delay: number) {
 }
 
 process.on('exit', function (code) {
-    console.log(code);
+    // console.log(code);
 });
 process.stdin.setEncoding('utf8');
 
@@ -79,20 +87,25 @@ async function inputLoop(
  * @param exclude
  * @param cb
  */
-export async function forEachDir(path: string, exclude: RegExp[], cb?: (path: string, isDir: boolean) => true | void | Promise<true | void>) {
+export async function forEachDir(
+    path: string,
+    exclude: RegExp[],
+    cb?: (path: string, isDir: boolean) => true | void | Promise<true | void>,
+) {
     try {
-        console.log("遍历", path);
-        const stats = await fs.statSync(path);
-        const isDir = stats.isDirectory();
-        const callback = cb || ((path, isDir) => undefined);
-        const isStop = await callback(path, isDir);
-        if (!isDir || isStop) {
-            return;
-        }
+        // console.log("遍历", path);
         const raw = String.raw`${path}`;
         const isExclude = exclude.some((item) => item.test(raw));
         if (isExclude) return;
 
+        const stats = await fs.statSync(path);
+        const isDir = stats.isDirectory();
+        const callback = cb || ((path, isDir) => undefined);
+        const isStop = await callback(path, isDir);
+
+        if (!isDir || isStop) {
+            return;
+        }
 
         const dir = await fs.readdirSync(path);
         for (const d of dir) {
@@ -191,9 +204,13 @@ export async function execute(cmd: string) {
 
 export function getParams() {
     const params: any = {};
-    process.argv.slice(2).forEach(it => {
+    (process.argv.slice(2) || []).forEach(it => {
         const sp = it.split("=");
         params[sp[0].replace("-", "")] = sp[1] || true;
     });
     return params;
+}
+
+export function isEmptyParams(): boolean {
+    return process.argv.length < 3;
 }

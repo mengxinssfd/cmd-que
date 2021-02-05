@@ -40,12 +40,20 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.getParams = exports.execute = exports.findDirBFS = exports.findDir = exports.forEachDir = exports.Debounce = exports.debounce = void 0;
+exports.isEmptyParams = exports.getParams = exports.execute = exports.findDirBFS = exports.findDir = exports.forEachDir = exports.Debounce = exports.debounce = exports.typeOf = void 0;
 var fs = require('fs');
 var Path = require('path');
 var childProcess = require('child_process');
 var util = require("util");
 var exec = util.promisify(childProcess.exec);
+// 获取数据类型
+function typeOf(target) {
+    var tp = typeof target;
+    if (tp !== 'object')
+        return tp;
+    return Object.prototype.toString.call(target).slice(8, -1).toLowerCase();
+}
+exports.typeOf = typeOf;
 /**
  * 防抖函数
  * @param callback 回调
@@ -87,7 +95,7 @@ function Debounce(delay) {
 }
 exports.Debounce = Debounce;
 process.on('exit', function (code) {
-    console.log(code);
+    // console.log(code);
 });
 process.stdin.setEncoding('utf8');
 // 控制台输入
@@ -132,12 +140,15 @@ function inputLoop(tips, conditionFn) {
  */
 function forEachDir(path, exclude, cb) {
     return __awaiter(this, void 0, void 0, function () {
-        var stats, isDir, callback, isStop, raw_1, isExclude, dir, _i, dir_1, d, p, e_1;
+        var raw_1, isExclude, stats, isDir, callback, isStop, dir, _i, dir_1, d, p, e_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 8, , 9]);
-                    console.log("遍历", path);
+                    raw_1 = String.raw(templateObject_1 || (templateObject_1 = __makeTemplateObject(["", ""], ["", ""])), path);
+                    isExclude = exclude.some(function (item) { return item.test(raw_1); });
+                    if (isExclude)
+                        return [2 /*return*/];
                     return [4 /*yield*/, fs.statSync(path)];
                 case 1:
                     stats = _a.sent();
@@ -149,10 +160,6 @@ function forEachDir(path, exclude, cb) {
                     if (!isDir || isStop) {
                         return [2 /*return*/];
                     }
-                    raw_1 = String.raw(templateObject_1 || (templateObject_1 = __makeTemplateObject(["", ""], ["", ""])), path);
-                    isExclude = exclude.some(function (item) { return item.test(raw_1); });
-                    if (isExclude)
-                        return [2 /*return*/];
                     return [4 /*yield*/, fs.readdirSync(path)];
                 case 3:
                     dir = _a.sent();
@@ -323,11 +330,15 @@ function execute(cmd) {
 exports.execute = execute;
 function getParams() {
     var params = {};
-    process.argv.slice(2).forEach(function (it) {
+    (process.argv.slice(2) || []).forEach(function (it) {
         var sp = it.split("=");
         params[sp[0].replace("-", "")] = sp[1] || true;
     });
     return params;
 }
 exports.getParams = getParams;
+function isEmptyParams() {
+    return process.argv.length < 3;
+}
+exports.isEmptyParams = isEmptyParams;
 var templateObject_1, templateObject_2, templateObject_3;
