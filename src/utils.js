@@ -39,8 +39,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
-exports.isEmptyParams = exports.getParams = exports.execute = exports.findDirBFS = exports.findDir = exports.forEachDir = exports.Debounce = exports.debounce = exports.typeOf = void 0;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createEnumByObj = exports.isEmptyParams = exports.getParams = exports.execute = exports.findDirBFS = exports.findDir = exports.forEachDir = exports.Debounce = exports.debounce = exports.typeOf = void 0;
 var fs = require('fs');
 var Path = require('path');
 var childProcess = require('child_process');
@@ -137,24 +137,30 @@ function inputLoop(tips, conditionFn) {
  * @param path
  * @param exclude
  * @param cb
+ * @param showLog
  */
-function forEachDir(path, exclude, cb) {
+function forEachDir(path, exclude, cb, showLog) {
+    if (showLog === void 0) { showLog = false; }
     return __awaiter(this, void 0, void 0, function () {
-        var raw_1, isExclude, stats, isDir, callback, isStop, dir, _i, dir_1, d, p, e_1;
+        var stats, isDir, basename, isExclude, callback, isStop, dir, _i, dir_1, d, p, e_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 8, , 9]);
-                    raw_1 = String.raw(templateObject_1 || (templateObject_1 = __makeTemplateObject(["", ""], ["", ""])), path);
-                    isExclude = exclude.some(function (item) { return item.test(raw_1); });
-                    if (isExclude)
-                        return [2 /*return*/];
+                    showLog && console.log("遍历", path);
                     return [4 /*yield*/, fs.statSync(path)];
                 case 1:
                     stats = _a.sent();
                     isDir = stats.isDirectory();
+                    basename = Path.basename(path);
+                    isExclude = function () {
+                        var raw = String.raw(templateObject_1 || (templateObject_1 = __makeTemplateObject(["", ""], ["", ""])), path);
+                        return exclude.some(function (item) { return item.test(raw); });
+                    };
+                    if (isDir && isExclude())
+                        return [2 /*return*/];
                     callback = cb || (function (path, isDir) { return undefined; });
-                    return [4 /*yield*/, callback(path, isDir)];
+                    return [4 /*yield*/, callback(path, basename, isDir)];
                 case 2:
                     isStop = _a.sent();
                     if (!isDir || isStop) {
@@ -169,7 +175,7 @@ function forEachDir(path, exclude, cb) {
                     if (!(_i < dir_1.length)) return [3 /*break*/, 7];
                     d = dir_1[_i];
                     p = Path.resolve(path, d);
-                    return [4 /*yield*/, forEachDir(p, exclude, cb)];
+                    return [4 /*yield*/, forEachDir(p, exclude, cb, showLog)];
                 case 5:
                     _a.sent();
                     _a.label = 6;
@@ -319,7 +325,7 @@ function execute(cmd) {
                     e_2 = _a.sent();
                     console.log('执行失败');
                     console.log('\n\n*******************************************');
-                    console.log(e_2.stdout);
+                    console.log(e_2.stderr);
                     console.log('*******************************************\n\n');
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
@@ -341,4 +347,15 @@ function isEmptyParams() {
     return process.argv.length < 3;
 }
 exports.isEmptyParams = isEmptyParams;
+function createEnumByObj(obj) {
+    var res = {};
+    for (var k in obj) {
+        if (res.hasOwnProperty(k))
+            throw new Error("key multiple");
+        res[res[k] = obj[k]] = k;
+    }
+    Object.freeze(res); // freeze值不可变
+    return res;
+}
+exports.createEnumByObj = createEnumByObj;
 var templateObject_1, templateObject_2, templateObject_3;

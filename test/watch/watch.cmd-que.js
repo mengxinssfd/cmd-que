@@ -3,9 +3,11 @@ module.exports = {
         /node_modules/,
         /\.git/,
         /\.idea/,
+        /src/,
+        /bin/,
     ],
-    // include: ["./test", "./test2"],
-    test: /\.(styl|ts|pug)$/,
+    include: ["./test/watch"],
+    test: [/\.(styl|ts)$/, /\.pug$/],
     async on(path, ext, exec) {
         const types = {
             styl: "styl",
@@ -15,12 +17,13 @@ module.exports = {
         const command = {
             [types.styl]: "stylus $FilePath$",
             [types.ts]: "tsc $FilePath$",
-            [types.pug]: "pug ./",
+            [types.pug]: "pug $FileDir$",
         };
         switch (ext) {
             case types.styl:
             case types.ts:
                 await exec(command[ext], path);
+                break;
             case types.pug:
                 await exec(command[types.pug], path);
                 break;

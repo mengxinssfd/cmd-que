@@ -3,6 +3,12 @@ var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cook
     if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
     return cooked;
 };
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -39,78 +45,138 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var utils_1 = require("./utils");
 var Path = require("path");
 var process = require("process");
+var abb = {
+    c: "config",
+    s: "search",
+    sf: "search-flag",
+    se: "search-exclude",
+    w: "watch",
+    h: "help",
+    t: "time",
+};
+var paramsAbb = utils_1.createEnumByObj(abb);
 var CommandQueue = /** @class */ (function () {
     function CommandQueue() {
-        this.watchArr = [];
-        var params = utils_1.getParams();
-        this.params = params;
-        if (utils_1.isEmptyParams() || params.help || params.h) {
-            this.showHelp();
-            return;
-        }
-        if (params.search) {
-            this.search();
-            return;
-        }
-        var configPath = Path.resolve(process.cwd(), params.config);
-        try {
-            this.config = require(configPath);
-        }
-        catch (e) {
-            console.error("加载配置文件出错", process.cwd(), configPath);
-            return;
-        }
-        if (params.watch) {
-            this.watch();
-            return;
-        }
-        else {
-            if (this.config.test) {
-                this.foreach();
-            }
-            else {
-                this.mulExec();
-            }
-            return;
-        }
-    }
-    CommandQueue.prototype.foreach = function () {
         var _this = this;
-        utils_1.forEachDir("./", this.config.exclude || [], function (path, isDir) { return __awaiter(_this, void 0, void 0, function () {
-            var test;
+        this.watchArr = [];
+        this.on = function (path) {
+            var on = _this.config.on || (function () { return Promise.resolve(); });
+            var ext = Path.extname(path).substr(1);
+            return on(path, ext, _this.exec);
+        };
+        this.params = utils_1.getParams();
+        var time = this.getParamsValue("t");
+        time && console.time("time");
+        this.init().finally(function () { return time && console.timeEnd("time"); });
+    }
+    CommandQueue.prototype.init = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var cp, configPath;
+            return __generator(this, function (_a) {
+                if (utils_1.isEmptyParams() || this.getParamsValue("h")) {
+                    return [2 /*return*/, this.showHelp()];
+                }
+                if (this.getParamsValue("s")) {
+                    return [2 /*return*/, this.search()];
+                }
+                cp = this.getParamsValue("c");
+                configPath = Path.resolve(process.cwd(), cp);
+                try {
+                    this.config = require(configPath);
+                }
+                catch (e) {
+                    console.error("加载配置文件出错", process.cwd(), configPath);
+                    return [2 /*return*/];
+                }
+                if (this.getParamsValue("w")) {
+                    return [2 /*return*/, this.watch()];
+                }
+                else {
+                    if (this.config.test) {
+                        return [2 /*return*/, this.foreach()];
+                    }
+                    else {
+                        return [2 /*return*/, this.mulExec()];
+                    }
+                }
+                return [2 /*return*/];
+            });
+        });
+    };
+    CommandQueue.prototype.getParamsValue = function (key) {
+        var pAbb = paramsAbb;
+        var params = this.params;
+        return params[key] || params[pAbb[key]];
+    };
+    CommandQueue.prototype.foreach = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var config, on, test, _loop_1, this_1, _i, test_1, reg;
+            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (isDir)
-                            return [2 /*return*/];
-                        test = this.config.test;
-                        if (!test.test(path))
-                            return [2 /*return*/];
-                        return [4 /*yield*/, this.mulExec(path)];
+                        config = this.config;
+                        on = config.on ? this.on : this.mulExec;
+                        test = Array.isArray(config.test) ? config.test : [config.test];
+                        _loop_1 = function (reg) {
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0: return [4 /*yield*/, utils_1.forEachDir("./", config.exclude || [], function (path, basename, isDir) { return __awaiter(_this, void 0, void 0, function () {
+                                            return __generator(this, function (_a) {
+                                                switch (_a.label) {
+                                                    case 0:
+                                                        if (isDir)
+                                                            return [2 /*return*/];
+                                                        if (!reg.test(basename))
+                                                            return [2 /*return*/];
+                                                        return [4 /*yield*/, on(path)];
+                                                    case 1:
+                                                        _a.sent();
+                                                        return [2 /*return*/];
+                                                }
+                                            });
+                                        }); }, this_1.params.log)];
+                                    case 1:
+                                        _a.sent();
+                                        return [2 /*return*/];
+                                }
+                            });
+                        };
+                        this_1 = this;
+                        _i = 0, test_1 = test;
+                        _a.label = 1;
                     case 1:
+                        if (!(_i < test_1.length)) return [3 /*break*/, 4];
+                        reg = test_1[_i];
+                        return [5 /*yield**/, _loop_1(reg)];
+                    case 2:
                         _a.sent();
-                        return [2 /*return*/];
+                        _a.label = 3;
+                    case 3:
+                        _i++;
+                        return [3 /*break*/, 1];
+                    case 4: return [2 /*return*/];
                 }
             });
-        }); });
+        });
     };
     CommandQueue.prototype.search = function () {
-        var _this = this;
-        var search = this.params.search;
+        var _a;
+        var search = this.getParamsValue("s");
+        var flag = this.getParamsValue("sf");
         if (typeof search !== "string")
             throw new TypeError("search");
-        var reg = new RegExp(search);
-        utils_1.forEachDir("./", [], function (path) { return __awaiter(_this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                if (reg.test(path))
-                    console.log("search ", path);
-                return [2 /*return*/];
-            });
-        }); });
+        var reg = new RegExp(search, flag);
+        console.log("search", reg);
+        var exclude = (_a = this.getParamsValue("se")) === null || _a === void 0 ? void 0 : _a.split(",").filter(function (i) { return i; }).map(function (i) { return new RegExp(i); });
+        return utils_1.forEachDir("./", exclude || [], function (path, basename) {
+            if (reg.test(basename))
+                console.log("result ", path);
+        }, this.params.log);
     };
     CommandQueue.prototype.exec = function (command, path) {
         if (path === void 0) { path = ""; }
@@ -122,7 +188,7 @@ var CommandQueue = /** @class */ (function () {
             "\\$FileNameWithoutAllExtensions\\$": basename.split(".")[0],
             "\\$FileDir\\$": path ? Path.dirname(path) : cwd,
             "\\$CmdDir\\$": cwd,
-            "\\$SourceFileDir\\$": __dirname
+            "\\$SourceFileDir\\$": __dirname,
         };
         var mapKeys = Object.keys(map);
         command = mapKeys.reduce(function (c, k) { return c.replace(new RegExp(k, "g"), map[k]); }, String.raw(templateObject_1 || (templateObject_1 = __makeTemplateObject(["", ""], ["", ""])), command));
@@ -153,9 +219,13 @@ var CommandQueue = /** @class */ (function () {
             });
         });
     };
+    CommandQueue.prototype.dbOn = function (path) {
+        this.on(path);
+    };
+    ;
     CommandQueue.prototype.watch = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var config, watchArr, dbOn, fs, cb, include, includes, _i, includes_1, path;
+            var config, watchArr, fs, watch, include, includes, _i, includes_1, path;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -166,21 +236,22 @@ var CommandQueue = /** @class */ (function () {
                             throw new TypeError("on required");
                         if (utils_1.typeOf(config.test) !== "regexp")
                             throw new TypeError("test required");
-                        dbOn = utils_1.debounce(config.on, 500);
                         fs = require("fs");
-                        cb = function (path) {
+                        watch = function (path) {
                             if (watchArr.indexOf(path) > -1)
                                 return;
                             watchArr.push(path);
                             console.log("对" + path + "文件夹添加监听\n");
-                            var watcher = fs.watch(path, null, function (e, f) { return __awaiter(_this, void 0, void 0, function () {
+                            var watchCB = function (e, f) { return __awaiter(_this, void 0, void 0, function () {
                                 var filePath, exist, index, stat, e_1;
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
                                         case 0:
+                                            if (!f)
+                                                throw new Error("文件名未提供");
                                             filePath = Path.resolve(path, f);
                                             // 判断是否需要监听的文件类型
-                                            if (!this.config.test.test(String.raw(templateObject_2 || (templateObject_2 = __makeTemplateObject(["", ""], ["", ""])), filePath)))
+                                            if (!config.test.test(String.raw(templateObject_2 || (templateObject_2 = __makeTemplateObject(["", ""], ["", ""])), f)))
                                                 return [2 /*return*/];
                                             _a.label = 1;
                                         case 1:
@@ -200,7 +271,7 @@ var CommandQueue = /** @class */ (function () {
                                         case 3:
                                             stat = _a.sent();
                                             if (stat.isDirectory()) {
-                                                utils_1.forEachDir(filePath, this.config.exclude, cb);
+                                                utils_1.forEachDir(filePath, config.exclude, watch, this.params.log);
                                             }
                                             return [3 /*break*/, 5];
                                         case 4:
@@ -210,14 +281,12 @@ var CommandQueue = /** @class */ (function () {
                                         case 5:
                                             console.log('监听到', filePath, '文件有改动');
                                             // 改动一个文件会触发多次该回调
-                                            return [4 /*yield*/, dbOn(filePath, Path.extname(filePath).substr(1), this.exec)];
-                                        case 6:
-                                            // 改动一个文件会触发多次该回调
-                                            _a.sent();
+                                            this.dbOn(filePath);
                                             return [2 /*return*/];
                                     }
                                 });
-                            }); });
+                            }); };
+                            var watcher = fs.watch(path, null, watchCB);
                             watcher.addListener("error", function (e) {
                                 console.log("addListener error", e);
                             });
@@ -229,10 +298,10 @@ var CommandQueue = /** @class */ (function () {
                     case 1:
                         if (!(_i < includes_1.length)) return [3 /*break*/, 4];
                         path = includes_1[_i];
-                        return [4 /*yield*/, utils_1.forEachDir(path, this.config.exclude, function (path, isDir) {
+                        return [4 /*yield*/, utils_1.forEachDir(path, config.exclude, function (path, basename, isDir) {
                                 if (isDir)
-                                    cb(path);
-                            })];
+                                    watch(path);
+                            }, this.params.log)];
                     case 2:
                         _a.sent();
                         _a.label = 3;
@@ -245,8 +314,11 @@ var CommandQueue = /** @class */ (function () {
         });
     };
     CommandQueue.prototype.showHelp = function () {
-        console.log("\n            -config=         \u914D\u7F6E\u7684\u8DEF\u5F84\n            -help/-h         \u5E2E\u52A9\n            -search=         \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939\n            -watch=          \u76D1\u542C\u6587\u4EF6\u6539\u53D8 \u4E0E-config\u642D\u914D\u4F7F\u7528\n        ");
+        console.log("\n            -config/-c=             \u914D\u7F6E\u7684\u8DEF\u5F84\n            -help/-h                \u5E2E\u52A9\n            -search/-s=             \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939\n            -search-flag/-sf=       \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 /\\w+/flag\n            -search-exclude/-se=    \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 \u5FFD\u7565\u6587\u4EF6\u5939 \u591A\u4E2A\u7528\u9017\u53F7(,)\u9694\u5F00\n            -watch/-w               \u76D1\u542C\u6587\u4EF6\u6539\u53D8 \u4E0E-config\u642D\u914D\u4F7F\u7528\n            -log                    \u904D\u5386\u6587\u4EF6\u5939\u65F6\u662F\u5426\u663E\u793A\u904D\u5386log\n            -time/t                 \u663E\u793A\u6267\u884C\u4EE3\u7801\u6240\u82B1\u8D39\u7684\u65F6\u95F4\n        ");
     };
+    __decorate([
+        utils_1.Debounce(500)
+    ], CommandQueue.prototype, "dbOn", null);
     return CommandQueue;
 }());
 new CommandQueue();

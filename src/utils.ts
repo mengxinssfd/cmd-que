@@ -86,22 +86,29 @@ async function inputLoop(
  * @param path
  * @param exclude
  * @param cb
+ * @param showLog
  */
 export async function forEachDir(
     path: string,
     exclude: RegExp[],
-    cb?: (path: string, isDir: boolean) => true | void | Promise<true | void>,
+    cb?: (path: string, basename: string, isDir: boolean) => true | void | Promise<true | void>,
+    showLog = false
 ) {
     try {
-        // console.log("遍历", path);
-        const raw = String.raw`${path}`;
-        const isExclude = exclude.some((item) => item.test(raw));
-        if (isExclude) return;
-
+        showLog && console.log("遍历", path);
         const stats = await fs.statSync(path);
         const isDir = stats.isDirectory();
+        const basename = Path.basename(path);
+
+        const isExclude = () => {
+            const raw = String.raw`${path}`;
+            return exclude.some((item) => item.test(raw));
+        };
+        if (isDir && isExclude()) return;
+
+
         const callback = cb || ((path, isDir) => undefined);
-        const isStop = await callback(path, isDir);
+        const isStop = await callback(path, basename, isDir);
 
         if (!isDir || isStop) {
             return;
@@ -110,7 +117,7 @@ export async function forEachDir(
         const dir = await fs.readdirSync(path);
         for (const d of dir) {
             const p = Path.resolve(path, d);
-            await forEachDir(p, exclude, cb);
+            await forEachDir(p, exclude, cb, showLog);
         }
     } catch (e) {
         return Promise.reject(e);
@@ -196,7 +203,7 @@ export async function execute(cmd: string) {
     } catch (e) {
         console.log('执行失败');
         console.log('\n\n*******************************************');
-        console.log(e.stdout);
+        console.log(e.stderr);
         console.log('*******************************************\n\n');
     }
 }
@@ -212,4 +219,15 @@ export function getParams() {
 
 export function isEmptyParams(): boolean {
     return process.argv.length < 3;
+}
+
+export function createEnumByObj<T extends object, K extends keyof T, O extends { [k: string]: K }>(obj: T): T & { [k: string]: K } {
+    const res: any = {};
+    for (let k in obj) {
+        if (res.hasOwnProperty(k)) throw new Error("key multiple");
+        res[res[k] = obj[k]] = k;
+    }
+
+    Object.freeze(res); // freeze值不可变
+    return res;
 }
