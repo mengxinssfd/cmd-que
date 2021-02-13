@@ -1,4 +1,4 @@
-// node src/index.js -c=test/watch/cmd-que.js -w -log
+// node src/index.js -c=test/watch.config.js -w -log
 module.exports = {
     beforeStart() {
         // console.log("start", debounce)
@@ -10,7 +10,6 @@ module.exports = {
         {
             test: /\.(styl|ts)$/,
             on: (eventName, path, ext, exec) => {
-                console.log(path, ext)
                 if (eventName === "delete") return;
                 const types = {
                     styl: "styl",
@@ -20,20 +19,32 @@ module.exports = {
                     [types.styl]: "stylus $FilePath$",
                     [types.ts]: "tsc $FilePath$",
                 };
-                return exec(command[ext], path);
+                return exec(command[ext]);
+            }
+        },
+        {
+            test: /\.styl$/,
+            on: async (eventName, path, ext, exec) => {
+                return exec("node -v");
             }
         },
         {
             test: /\.styl$/,
             on: (eventName, path, ext, exec) => {
-                console.log("test styl")
+                console.log("test styl2")
+            }
+        },
+        {
+            test: /\.styl$/,
+            on: (eventName, path, ext, exec) => {
+                console.log("test styl3")
             }
         },
         /*  {
               test: /\.pug$/,
               on(eventName, path, ext, exec) {
                   if (eventName === "delete") return;
-                  return exec("pug $FileDir$", path)
+                  return exec("pug $FileDir$")
               }
           }*/
     ],
@@ -44,5 +55,5 @@ module.exports = {
         /src/,
         /bin/,
     ],
-    include: ["./test/watch"],
+    include: ["./test"],
 };

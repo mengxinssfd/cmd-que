@@ -1,102 +1,58 @@
 import {
     createEnumByObj,
-    debounce,
-    Debounce,
     debouncePromise,
     execute,
     forEachDir,
     getParams,
     isEmptyParams,
-    typeOf
 } from "./utils";
+
+import {WatchConfig, ExecCmdConfig, isRuleOn} from "./configFileTypes";
 
 const Path = require("path");
 const process = require("process");
 
-type execFn = (command: string, path?: string) => Promise<void>;
 
-/**
- * @param eventName 事件名
- * @param path 触发改动事件的路径
- * @param ext 触发改动事件的文件后缀
- * @param exec 执行命令函数
- */
-type onFn = (eventName: string, path: string, ext: string, exec: execFn) => Promise<void>
-
-type Rule = {
-    test: RegExp,
-    on: onFn,
-    command: string[];
-};
-type RuleOn = Omit<Rule, "command">;
-type RuleCmd = Omit<Rule, "on">;
-type Rules = Array<RuleOn | RuleCmd>;
-
-interface Config {
-    beforeStart: (exec: (command, path?: string) => Promise<void>) => void;
-    beforeEnd: (exec: (command, path?: string) => Promise<void>) => void;
+// 全写对应的缩写
+enum Abb {
+    config = "c",
+    search = "s",
+    "search-flag" = "sf",
+    "search-exclude" = "se",
+    watch = "w",
+    help = "h",
+    time = "t"
 }
 
-interface ExecCmdConfig extends Config {
-    command: string[]; // 直接执行命令列表 占位符会被替换
-}
+const paramsAbb = createEnumByObj(Abb);
 
-interface ExecTestCmdConfig extends Config {
-    exclude?: RegExp[]; // 如果test不为空，路径包含改正则的话不遍历
-    rules: Rules;
-}
-
-
-type ExecConfig = ExecCmdConfig | ExecTestCmdConfig
-
-interface WatchConfig extends Config {
-    exclude?: RegExp[]; // 路径包含该正则的话不遍历
-    include?: string[] | string; // 要监听的文件夹路径 // 默认为当前文件夹
-    rules: Rules
-}
-
-// 缩写对应的全写
-enum abb {
-    c = "config",
-    s = "search",
-    sf = "search-flag",
-    se = "search-exclude",
-    w = "watch",
-    h = "help",
-    t = "time"
-}
-
-const paramsAbb = createEnumByObj(abb);
-
-function isRuleOn(rule: RuleOn | RuleCmd): rule is RuleOn {
-    return (rule as RuleOn).on !== undefined;
-}
-
+// TODO 挂载在webstorm file watcher上的话参数无法传递
 class CommandQueue {
     private readonly params: any;
-    private config: ExecConfig | WatchConfig;
+    private config!: ExecCmdConfig | WatchConfig;
     private watchArr: string[] = [];
 
     constructor() {
         this.params = getParams();
-        const time = this.getParamsValue("t");
+        const time = this.getParamsValue(Abb.time);
         time && console.time("time");
         this.init().finally(() => {
-            this.config.beforeEnd && this.config.beforeEnd(this.exec);
+            // watch模式下beforeEnd为第一次遍历完后的回调
+            this.config && this.config.beforeEnd && this.config.beforeEnd(this.exec);
             time && console.timeEnd("time");
         });
     }
 
-    async init() {
-        if (isEmptyParams() || this.getParamsValue("h")) {
-            return this.showHelp();
+    private async init() {
+        if (isEmptyParams() || this.getParamsValue(Abb.help)) {
+            return CommandQueue.showHelp();
         }
 
-        if (this.getParamsValue("s")) {
+        if (this.getParamsValue(Abb.search)) {
             return this.search();
         }
 
-        const cp = this.getParamsValue("c");
+        const cp = this.getParamsValue(Abb.config);
         const configPath = Path.resolve(process.cwd(), cp);
         try {
             this.config = require(configPath);
@@ -105,11 +61,11 @@ class CommandQueue {
             return;
         }
         this.config.beforeStart && this.config.beforeStart(this.exec);
-        if (this.getParamsValue("w")) {
+        if (this.getParamsValue(Abb.watch)) {
             return this.watch();
         } else {
-            if ((this.config as ExecTestCmdConfig).rules) {
-                return this.foreach();
+            if ((this.config as WatchConfig).rules) {
+                return this.testRules();
             } else {
                 return this.mulExec((this.config as ExecCmdConfig).command);
             }
@@ -117,41 +73,54 @@ class CommandQueue {
 
     }
 
-    getParamsValue(key: keyof typeof abb): string {
+    private getParamsValue(key: Abb): string {
         const pAbb: any = paramsAbb;
         const params = this.params;
         return params[key] || params[pAbb[key]];
     }
 
-    async foreach() {
-        const config = this.config as ExecTestCmdConfig;
+    private async testRules() {
+        const config = this.config as WatchConfig;
+        const include = config.include;
+        const includes = include ? (Array.isArray(include) ? include : [include]) : ["./"];
+        for (const path of includes) {
+            await this.foreach(path, config.exclude, (path, basename) => {
+                return this.test("", path, basename);
+            });
+        }
+    }
 
-        await forEachDir("./", config.exclude, async (path, basename, isDir) => {
-            return this.test("", path, basename);
+    private foreach(
+        path: string,
+        exclude: RegExp[] = [],
+        cb: (path: string, basename: string, isDir: boolean) => true | void | Promise<true | void>,
+    ) {
+        return forEachDir(path, exclude, (path: string, basename: string, isDir: boolean) => {
+            return cb(path, basename, isDir);
         }, this.params.log);
     }
 
-    search() {
-        const search = this.getParamsValue("s");
-        const flag = this.getParamsValue("sf");
-        if (typeof search !== "string") throw new TypeError("search");
+    private search() {
+        const search = this.getParamsValue(Abb.search);
+        const flag = this.getParamsValue(Abb["search-flag"]);
         const reg = new RegExp(search, flag);
         console.log("search", reg);
-        const exclude = this.getParamsValue("se")?.split(",").filter(i => i).map(i => new RegExp(i));
-        return forEachDir("./", exclude, (path, basename) => {
+        const exclude = this.getParamsValue(Abb["search-exclude"])?.split(",").filter(i => i).map(i => new RegExp(i));
+        return this.foreach("./", exclude, (path, basename) => {
             if (reg.test(basename)) console.log("result ", path);
-        }, this.params.log);
+        });
     }
 
-    exec(command: string, path = "") {
+    private exec(command: string, path = "") {
         const cwd = process.cwd();
+        path = path || cwd;
         const basename = Path.basename(path);
 
-        const map = {
+        const map: { [k: string]: string } = {
             "\\$FilePath\\$": path,
             "\\$FileNameWithoutExtension\\$": basename.split(".").slice(0, -1).join("."),
             "\\$FileNameWithoutAllExtensions\\$": basename.split(".")[0],
-            "\\$FileDir\\$": path ? Path.dirname(path) : cwd,
+            "\\$FileDir\\$": Path.dirname(path),
             "\\$Cwd\\$": cwd,
             "\\$SourceFileDir\\$": __dirname,
         };
@@ -160,26 +129,31 @@ class CommandQueue {
         return execute(command);
     };
 
-    async mulExec(command: string[], path = "") {
+    private async mulExec(command: string[], path?: string) {
         for (const cmd of command) {
             await this.exec(cmd, path);
         }
     }
 
-    async test(eventName: string, path: string, basename: string) {
+    private async test(eventName: string, path: string, basename: string) {
         const rules = (this.config as WatchConfig).rules;
         if (!rules) return;
         for (const rule of rules) {
             if (!rule.test.test(basename)) continue;
             if (isRuleOn(rule)) {
-                await rule.on(eventName, path, Path.extname(path).substr(1), this.exec);
+                await rule.on(
+                    eventName,
+                    path,
+                    Path.extname(path).substr(1),
+                    (cmd: string) => this.exec(cmd, path)
+                );
             } else {
-                await this.mulExec((rule as RuleCmd).command, path);
+                await this.mulExec(rule.command, path);
             }
         }
     }
 
-    async watch() {
+    private async watch() {
         const config = this.config as WatchConfig;
         const watchArr = this.watchArr;
 
@@ -187,11 +161,12 @@ class CommandQueue {
         // 编辑器修改保存时会触发多次change事件
         config.rules.forEach(item => {
             if (!isRuleOn(item)) return;
-            item.on = debouncePromise(item.on, 50);
+            // 可能会有机器会慢一点 如果有再把间隔调大一点
+            item.on = debouncePromise(item.on, 1);
         });
 
-        const fs = require("fs");
-        const watch = (path) => {
+        const FS = require("fs");
+        const watch = (path: string) => {
             if (watchArr.indexOf(path) > -1) return;
             watchArr.push(path);
             console.log("对" + path + "文件夹添加监听\n");
@@ -202,10 +177,10 @@ class CommandQueue {
                 this.params.log && console.log(eventType, filePath);
                 // 判断是否需要监听的文件类型
                 try {
-                    const exist = await fs.existsSync(filePath);
+                    const exist = await FS.existsSync(filePath);
                     await this.test(exist ? eventType : "delete", filePath, filename);
                     if (!exist) {
-                        console.log(filePath, "已删除!");
+                        this.params.log && console.log(filePath, "已删除!");
                         // 删除过的需要在watchArr里面去掉，否则重新建一个相同名称的目录不会添加监听
                         const index = watchArr.indexOf(filePath);
                         if (index > -1) {
@@ -214,19 +189,19 @@ class CommandQueue {
                         return;
                     }
                     // 如果是新增的目录，必须添加监听否则不能监听到该目录的文件变化
-                    const stat = await fs.statSync(filePath);
+                    const stat = await FS.statSync(filePath);
                     if (stat.isDirectory()) {
-                        forEachDir(filePath, config.exclude, watch, this.params.log);
+                        this.foreach(filePath, config.exclude, watch);
                     }
                 } catch (e) {
-                    console.log("watch try catch", e, filePath);
+                    this.params.log && console.log("watch try catch", e, filePath);
                 }
 
             };
 
-            const watcher = fs.watch(path, null, watchCB);
+            const watcher = FS.watch(path, null, watchCB);
 
-            watcher.addListener("error", function (e) {
+            watcher.addListener("error", function (e: any) {
                 console.log("addListener error", e);
             });
         };
@@ -236,13 +211,13 @@ class CommandQueue {
         const includes = include ? (Array.isArray(include) ? include : [include]) : ["./"];
 
         for (const path of includes) {
-            await forEachDir(path, config.exclude, (path, basename, isDir) => {
+            await this.foreach(path, config.exclude, (path, basename, isDir) => {
                 if (isDir) watch(path);
-            }, this.params.log);
+            });
         }
     }
 
-    showHelp() {
+    private static showHelp() {
         console.log(`
             -config/-c=             配置的路径
             -help/-h                帮助

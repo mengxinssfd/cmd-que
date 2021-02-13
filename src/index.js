@@ -41,32 +41,32 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var utils_1 = require("./utils");
+var configFileTypes_1 = require("./configFileTypes");
 var Path = require("path");
 var process = require("process");
-// 缩写对应的全写
-var abb;
-(function (abb) {
-    abb["c"] = "config";
-    abb["s"] = "search";
-    abb["sf"] = "search-flag";
-    abb["se"] = "search-exclude";
-    abb["w"] = "watch";
-    abb["h"] = "help";
-    abb["t"] = "time";
-})(abb || (abb = {}));
-var paramsAbb = utils_1.createEnumByObj(abb);
-function isRuleOn(rule) {
-    return rule.on !== undefined;
-}
+// 全写对应的缩写
+var Abb;
+(function (Abb) {
+    Abb["config"] = "c";
+    Abb["search"] = "s";
+    Abb["search-flag"] = "sf";
+    Abb["search-exclude"] = "se";
+    Abb["watch"] = "w";
+    Abb["help"] = "h";
+    Abb["time"] = "t";
+})(Abb || (Abb = {}));
+var paramsAbb = utils_1.createEnumByObj(Abb);
+// TODO 挂载在webstorm file watcher上的话参数无法传递
 var CommandQueue = /** @class */ (function () {
     function CommandQueue() {
         var _this = this;
         this.watchArr = [];
         this.params = utils_1.getParams();
-        var time = this.getParamsValue("t");
+        var time = this.getParamsValue(Abb.time);
         time && console.time("time");
         this.init().finally(function () {
-            _this.config.beforeEnd && _this.config.beforeEnd(_this.exec);
+            // watch模式下beforeEnd为第一次遍历完后的回调
+            _this.config && _this.config.beforeEnd && _this.config.beforeEnd(_this.exec);
             time && console.timeEnd("time");
         });
     }
@@ -74,13 +74,13 @@ var CommandQueue = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             var cp, configPath;
             return __generator(this, function (_a) {
-                if (utils_1.isEmptyParams() || this.getParamsValue("h")) {
-                    return [2 /*return*/, this.showHelp()];
+                if (utils_1.isEmptyParams() || this.getParamsValue(Abb.help)) {
+                    return [2 /*return*/, CommandQueue.showHelp()];
                 }
-                if (this.getParamsValue("s")) {
+                if (this.getParamsValue(Abb.search)) {
                     return [2 /*return*/, this.search()];
                 }
-                cp = this.getParamsValue("c");
+                cp = this.getParamsValue(Abb.config);
                 configPath = Path.resolve(process.cwd(), cp);
                 try {
                     this.config = require(configPath);
@@ -90,12 +90,12 @@ var CommandQueue = /** @class */ (function () {
                     return [2 /*return*/];
                 }
                 this.config.beforeStart && this.config.beforeStart(this.exec);
-                if (this.getParamsValue("w")) {
+                if (this.getParamsValue(Abb.watch)) {
                     return [2 /*return*/, this.watch()];
                 }
                 else {
                     if (this.config.rules) {
-                        return [2 /*return*/, this.foreach()];
+                        return [2 /*return*/, this.testRules()];
                     }
                     else {
                         return [2 /*return*/, this.mulExec(this.config.command)];
@@ -110,49 +110,63 @@ var CommandQueue = /** @class */ (function () {
         var params = this.params;
         return params[key] || params[pAbb[key]];
     };
-    CommandQueue.prototype.foreach = function () {
+    CommandQueue.prototype.testRules = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var config;
+            var config, include, includes, _i, includes_1, path;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         config = this.config;
-                        return [4 /*yield*/, utils_1.forEachDir("./", config.exclude, function (path, basename, isDir) { return __awaiter(_this, void 0, void 0, function () {
-                                return __generator(this, function (_a) {
-                                    return [2 /*return*/, this.test("", path, basename)];
-                                });
-                            }); }, this.params.log)];
+                        include = config.include;
+                        includes = include ? (Array.isArray(include) ? include : [include]) : ["./"];
+                        _i = 0, includes_1 = includes;
+                        _a.label = 1;
                     case 1:
+                        if (!(_i < includes_1.length)) return [3 /*break*/, 4];
+                        path = includes_1[_i];
+                        return [4 /*yield*/, this.foreach(path, config.exclude, function (path, basename) {
+                                return _this.test("", path, basename);
+                            })];
+                    case 2:
                         _a.sent();
-                        return [2 /*return*/];
+                        _a.label = 3;
+                    case 3:
+                        _i++;
+                        return [3 /*break*/, 1];
+                    case 4: return [2 /*return*/];
                 }
             });
         });
     };
+    CommandQueue.prototype.foreach = function (path, exclude, cb) {
+        if (exclude === void 0) { exclude = []; }
+        return utils_1.forEachDir(path, exclude, function (path, basename, isDir) {
+            return cb(path, basename, isDir);
+        }, this.params.log);
+    };
     CommandQueue.prototype.search = function () {
         var _a;
-        var search = this.getParamsValue("s");
-        var flag = this.getParamsValue("sf");
-        if (typeof search !== "string")
-            throw new TypeError("search");
+        var search = this.getParamsValue(Abb.search);
+        var flag = this.getParamsValue(Abb["search-flag"]);
         var reg = new RegExp(search, flag);
         console.log("search", reg);
-        var exclude = (_a = this.getParamsValue("se")) === null || _a === void 0 ? void 0 : _a.split(",").filter(function (i) { return i; }).map(function (i) { return new RegExp(i); });
-        return utils_1.forEachDir("./", exclude, function (path, basename) {
+        var exclude = (_a = this.getParamsValue(Abb["search-exclude"])) === null || _a === void 0 ? void 0 : _a.split(",").filter(function (i) { return i; }).map(function (i) { return new RegExp(i); });
+        return this.foreach("./", exclude, function (path, basename) {
             if (reg.test(basename))
                 console.log("result ", path);
-        }, this.params.log);
+        });
     };
     CommandQueue.prototype.exec = function (command, path) {
         if (path === void 0) { path = ""; }
         var cwd = process.cwd();
+        path = path || cwd;
         var basename = Path.basename(path);
         var map = {
             "\\$FilePath\\$": path,
             "\\$FileNameWithoutExtension\\$": basename.split(".").slice(0, -1).join("."),
             "\\$FileNameWithoutAllExtensions\\$": basename.split(".")[0],
-            "\\$FileDir\\$": path ? Path.dirname(path) : cwd,
+            "\\$FileDir\\$": Path.dirname(path),
             "\\$Cwd\\$": cwd,
             "\\$SourceFileDir\\$": __dirname,
         };
@@ -162,7 +176,6 @@ var CommandQueue = /** @class */ (function () {
     };
     ;
     CommandQueue.prototype.mulExec = function (command, path) {
-        if (path === void 0) { path = ""; }
         return __awaiter(this, void 0, void 0, function () {
             var _i, command_1, cmd;
             return __generator(this, function (_a) {
@@ -188,6 +201,7 @@ var CommandQueue = /** @class */ (function () {
     CommandQueue.prototype.test = function (eventName, path, basename) {
         return __awaiter(this, void 0, void 0, function () {
             var rules, _i, rules_1, rule;
+            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -201,8 +215,8 @@ var CommandQueue = /** @class */ (function () {
                         rule = rules_1[_i];
                         if (!rule.test.test(basename))
                             return [3 /*break*/, 5];
-                        if (!isRuleOn(rule)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, rule.on(eventName, path, Path.extname(path).substr(1), this.exec)];
+                        if (!configFileTypes_1.isRuleOn(rule)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, rule.on(eventName, path, Path.extname(path).substr(1), function (cmd) { return _this.exec(cmd, path); })];
                     case 2:
                         _a.sent();
                         return [3 /*break*/, 5];
@@ -220,7 +234,7 @@ var CommandQueue = /** @class */ (function () {
     };
     CommandQueue.prototype.watch = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var config, watchArr, fs, watch, include, includes, _i, includes_1, path;
+            var config, watchArr, FS, watch, include, includes, _i, includes_2, path;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -231,11 +245,12 @@ var CommandQueue = /** @class */ (function () {
                             throw new TypeError("rules required");
                         // 编辑器修改保存时会触发多次change事件
                         config.rules.forEach(function (item) {
-                            if (!isRuleOn(item))
+                            if (!configFileTypes_1.isRuleOn(item))
                                 return;
-                            item.on = utils_1.debouncePromise(item.on, 50);
+                            // 可能会有机器会慢一点 如果有再把间隔调大一点
+                            item.on = utils_1.debouncePromise(item.on, 1);
                         });
-                        fs = require("fs");
+                        FS = require("fs");
                         watch = function (path) {
                             if (watchArr.indexOf(path) > -1)
                                 return;
@@ -253,51 +268,51 @@ var CommandQueue = /** @class */ (function () {
                                             _a.label = 1;
                                         case 1:
                                             _a.trys.push([1, 5, , 6]);
-                                            return [4 /*yield*/, fs.existsSync(filePath)];
+                                            return [4 /*yield*/, FS.existsSync(filePath)];
                                         case 2:
                                             exist = _a.sent();
                                             return [4 /*yield*/, this.test(exist ? eventType : "delete", filePath, filename)];
                                         case 3:
                                             _a.sent();
                                             if (!exist) {
-                                                console.log(filePath, "已删除!");
+                                                this.params.log && console.log(filePath, "已删除!");
                                                 index = watchArr.indexOf(filePath);
                                                 if (index > -1) {
                                                     watchArr.splice(index, 1);
                                                 }
                                                 return [2 /*return*/];
                                             }
-                                            return [4 /*yield*/, fs.statSync(filePath)];
+                                            return [4 /*yield*/, FS.statSync(filePath)];
                                         case 4:
                                             stat = _a.sent();
                                             if (stat.isDirectory()) {
-                                                utils_1.forEachDir(filePath, config.exclude, watch, this.params.log);
+                                                this.foreach(filePath, config.exclude, watch);
                                             }
                                             return [3 /*break*/, 6];
                                         case 5:
                                             e_1 = _a.sent();
-                                            console.log("watch try catch", e_1, filePath);
+                                            this.params.log && console.log("watch try catch", e_1, filePath);
                                             return [3 /*break*/, 6];
                                         case 6: return [2 /*return*/];
                                     }
                                 });
                             }); };
-                            var watcher = fs.watch(path, null, watchCB);
+                            var watcher = FS.watch(path, null, watchCB);
                             watcher.addListener("error", function (e) {
                                 console.log("addListener error", e);
                             });
                         };
                         include = config.include;
                         includes = include ? (Array.isArray(include) ? include : [include]) : ["./"];
-                        _i = 0, includes_1 = includes;
+                        _i = 0, includes_2 = includes;
                         _a.label = 1;
                     case 1:
-                        if (!(_i < includes_1.length)) return [3 /*break*/, 4];
-                        path = includes_1[_i];
-                        return [4 /*yield*/, utils_1.forEachDir(path, config.exclude, function (path, basename, isDir) {
+                        if (!(_i < includes_2.length)) return [3 /*break*/, 4];
+                        path = includes_2[_i];
+                        return [4 /*yield*/, this.foreach(path, config.exclude, function (path, basename, isDir) {
                                 if (isDir)
                                     watch(path);
-                            }, this.params.log)];
+                            })];
                     case 2:
                         _a.sent();
                         _a.label = 3;
@@ -309,7 +324,7 @@ var CommandQueue = /** @class */ (function () {
             });
         });
     };
-    CommandQueue.prototype.showHelp = function () {
+    CommandQueue.showHelp = function () {
         console.log("\n            -config/-c=             \u914D\u7F6E\u7684\u8DEF\u5F84\n            -help/-h                \u5E2E\u52A9\n            -search/-s=             \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939\n            -search-flag/-sf=       \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 /\\w+/flag\n            -search-exclude/-se=    \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 \u5FFD\u7565\u6587\u4EF6\u5939 \u591A\u4E2A\u7528\u9017\u53F7(,)\u9694\u5F00\n            -watch/-w               \u76D1\u542C\u6587\u4EF6\u6539\u53D8 \u4E0E-config\u642D\u914D\u4F7F\u7528\n            -log                    \u904D\u5386\u6587\u4EF6\u5939\u65F6\u662F\u5426\u663E\u793A\u904D\u5386log\n            -time/t                 \u663E\u793A\u6267\u884C\u4EE3\u7801\u6240\u82B1\u8D39\u7684\u65F6\u95F4\n        ");
     };
     return CommandQueue;

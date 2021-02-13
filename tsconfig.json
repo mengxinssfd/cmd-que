@@ -3,6 +3,7 @@
     "module": "commonjs",
     "target": "esNext",
     "sourceMap": false,
+    "strict": true,
     "experimentalDecorators": true
   },
   "lib": [

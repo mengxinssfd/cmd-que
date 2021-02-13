@@ -92,7 +92,7 @@ function debouncePromise(callback, delay) {
             if (timer) {
                 clearTimeout(timer);
                 timer = null;
-                rej();
+                rej("debounce promise reject");
             }
             rej = reject;
             timer = setTimeout(function () { return __awaiter(_this, void 0, void 0, function () {
@@ -174,6 +174,7 @@ function inputLoop(tips, conditionFn) {
  * @param showLog
  */
 function forEachDir(path, exclude, cb, showLog) {
+    if (exclude === void 0) { exclude = []; }
     if (showLog === void 0) { showLog = false; }
     return __awaiter(this, void 0, void 0, function () {
         var stats, isDir, basename, isExclude, callback, isStop, dir, _i, dir_1, d, p, e_1;
@@ -278,16 +279,17 @@ function findDir(path, exclude, cb) {
 exports.findDir = findDir;
 function findDirBFS(path, exclude, cb) {
     return __awaiter(this, void 0, void 0, function () {
-        var pathList, p, _loop_1, state_1;
+        var pathList, _loop_1, state_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     pathList = [path];
                     _loop_1 = function () {
-                        var v, stats, isDir, raw, isExclude, list;
+                        var p, v, stats, isDir, raw, isExclude, list;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
+                                    p = pathList.shift();
                                     console.log("findDirBFS", p);
                                     return [4 /*yield*/, cb(p)];
                                 case 1:
@@ -315,7 +317,7 @@ function findDirBFS(path, exclude, cb) {
                     };
                     _a.label = 1;
                 case 1:
-                    if (!(p = pathList.shift())) return [3 /*break*/, 3];
+                    if (!pathList.length) return [3 /*break*/, 3];
                     return [5 /*yield**/, _loop_1()];
                 case 2:
                     state_1 = _a.sent();
@@ -352,7 +354,7 @@ function execute(cmd) {
                     return [4 /*yield*/, exec(cmd)];
                 case 2:
                     stdout = (_a.sent()).stdout;
-                    console.log('执行成功!!');
+                    console.log('success!');
                     // console.log('\n\n*************************命令输出start*************************');
                     console.log(stdout);
                     return [3 /*break*/, 4];

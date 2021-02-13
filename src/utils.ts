@@ -20,7 +20,7 @@ export function typeOf(target: any): string {
  */
 export function debounce<CB extends (...args: any[]) => void>(callback: CB, delay: number): CB {
     let timer: any = null;
-    return function (...args: any[]) {
+    return function (this: unknown, ...args: any[]) {
         if (timer) {
             clearTimeout(timer);
             timer = null;
@@ -34,14 +34,14 @@ export function debounce<CB extends (...args: any[]) => void>(callback: CB, dela
 
 export function debouncePromise<T, CB extends (...args: any[]) => Promise<T>>(callback: CB, delay: number): CB {
     let timer: any = null;
-    let rej;
+    let rej: Function;
 
-    return function (...args: any[]) {
+    return function (this: unknown, ...args: any[]) {
         return new Promise<T>((resolve, reject) => {
             if (timer) {
                 clearTimeout(timer);
                 timer = null;
-                rej();
+                rej("debounce promise reject");
             }
             rej = reject;
             timer = setTimeout(async () => {
@@ -111,7 +111,7 @@ async function inputLoop(
  */
 export async function forEachDir(
     path: string,
-    exclude?: RegExp[],
+    exclude: RegExp[] = [],
     cb?: (path: string, basename: string, isDir: boolean) => true | void | Promise<true | void>,
     showLog = false
 ) {
@@ -176,9 +176,10 @@ export async function findDir(path: string, exclude: RegExp[], cb: (path: string
 }
 
 export async function findDirBFS(path: string, exclude: RegExp[], cb: (path: string) => boolean): Promise<null | string> {
-    const pathList = [path];
-    let p;
-    while (p = pathList.shift()) {
+    const pathList: string[] = [path];
+
+    while (pathList.length) {
+        const p = pathList.shift() as string;
         console.log("findDirBFS", p);
         const v = await cb(p);
         if (v) {
@@ -193,7 +194,7 @@ export async function findDirBFS(path: string, exclude: RegExp[], cb: (path: str
         const isExclude = exclude.some((item) => item.test(raw));
         if (isExclude) continue;
 
-        const list = (await fs.readdirSync(p) || []).map(i => Path.resolve(p, i));
+        const list = ((await fs.readdirSync(p) as string[]) || []).map(i => Path.resolve(p, i));
         pathList.push(...list);
 
     }
@@ -219,7 +220,7 @@ export async function execute(cmd: string) {
     console.log(getTime(), '执行"' + cmd + '"命令...');
     try {
         const {stdout} = await exec(cmd);
-        console.log('执行成功!!');
+        console.log('success!');
         // console.log('\n\n*************************命令输出start*************************');
         console.log(stdout);
         // console.log('*************************命令输出end*******************\n\n');
