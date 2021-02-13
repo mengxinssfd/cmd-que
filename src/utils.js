@@ -40,7 +40,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createEnumByObj = exports.isEmptyParams = exports.getParams = exports.execute = exports.findDirBFS = exports.findDir = exports.forEachDir = exports.Debounce = exports.debounce = exports.typeOf = void 0;
+exports.createEnumByObj = exports.isEmptyParams = exports.getParams = exports.execute = exports.findDirBFS = exports.findDir = exports.forEachDir = exports.Debounce = exports.debouncePromise = exports.debounce = exports.typeOf = void 0;
 var fs = require('fs');
 var Path = require('path');
 var childProcess = require('child_process');
@@ -79,6 +79,40 @@ function debounce(callback, delay) {
     };
 }
 exports.debounce = debounce;
+function debouncePromise(callback, delay) {
+    var timer = null;
+    var rej;
+    return function () {
+        var _this = this;
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        return new Promise(function (resolve, reject) {
+            if (timer) {
+                clearTimeout(timer);
+                timer = null;
+                rej();
+            }
+            rej = reject;
+            timer = setTimeout(function () { return __awaiter(_this, void 0, void 0, function () {
+                var result;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            timer = null;
+                            return [4 /*yield*/, callback.apply(this, args)];
+                        case 1:
+                            result = _a.sent();
+                            resolve(result);
+                            return [2 /*return*/];
+                    }
+                });
+            }); }, delay);
+        });
+    };
+}
+exports.debouncePromise = debouncePromise;
 /**
  * 防抖装饰器
  * @param delay
@@ -153,6 +187,7 @@ function forEachDir(path, exclude, cb, showLog) {
                     stats = _a.sent();
                     isDir = stats.isDirectory();
                     basename = Path.basename(path);
+                    exclude = exclude || [];
                     isExclude = function () {
                         var raw = String.raw(templateObject_1 || (templateObject_1 = __makeTemplateObject(["", ""], ["", ""])), path);
                         return exclude.some(function (item) { return item.test(raw); });

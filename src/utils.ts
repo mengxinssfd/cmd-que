@@ -18,7 +18,7 @@ export function typeOf(target: any): string {
  * @param delay 延时
  * @returns {Function}
  */
-export function debounce(callback: (...args: any[]) => void, delay: number) {
+export function debounce<CB extends (...args: any[]) => void>(callback: CB, delay: number): CB {
     let timer: any = null;
     return function (...args: any[]) {
         if (timer) {
@@ -29,7 +29,28 @@ export function debounce(callback: (...args: any[]) => void, delay: number) {
             timer = null;
             callback.apply(this, args);
         }, delay);
-    };
+    } as CB;
+}
+
+export function debouncePromise<T, CB extends (...args: any[]) => Promise<T>>(callback: CB, delay: number): CB {
+    let timer: any = null;
+    let rej;
+
+    return function (...args: any[]) {
+        return new Promise<T>((resolve, reject) => {
+            if (timer) {
+                clearTimeout(timer);
+                timer = null;
+                rej();
+            }
+            rej = reject;
+            timer = setTimeout(async () => {
+                timer = null;
+                const result = await callback.apply(this, args);
+                resolve(result);
+            }, delay);
+        });
+    } as CB;
 }
 
 /**
@@ -90,7 +111,7 @@ async function inputLoop(
  */
 export async function forEachDir(
     path: string,
-    exclude: RegExp[],
+    exclude?: RegExp[],
     cb?: (path: string, basename: string, isDir: boolean) => true | void | Promise<true | void>,
     showLog = false
 ) {
@@ -99,6 +120,8 @@ export async function forEachDir(
         const stats = await fs.statSync(path);
         const isDir = stats.isDirectory();
         const basename = Path.basename(path);
+
+        exclude = exclude || [];
 
         const isExclude = () => {
             const raw = String.raw`${path}`;

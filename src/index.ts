@@ -1,4 +1,14 @@
-import {createEnumByObj, Debounce, execute, forEachDir, getParams, isEmptyParams, typeOf} from "./utils";
+import {
+    createEnumByObj,
+    debounce,
+    Debounce,
+    debouncePromise,
+    execute,
+    forEachDir,
+    getParams,
+    isEmptyParams,
+    typeOf
+} from "./utils";
 
 const Path = require("path");
 const process = require("process");
@@ -6,48 +16,61 @@ const process = require("process");
 type execFn = (command: string, path?: string) => Promise<void>;
 
 /**
+ * @param eventName 事件名
  * @param path 触发改动事件的路径
  * @param ext 触发改动事件的文件后缀
  * @param exec 执行命令函数
  */
-type onFn = (path: string, ext: string, exec: execFn) => Promise<void>
+type onFn = (eventName: string, path: string, ext: string, exec: execFn) => Promise<void>
 
-interface ExecCmdConfig {
-    command: string[]; // 直接执行命令列表
+type Rule = {
+    test: RegExp,
+    on: onFn,
+    command: string[];
+};
+type RuleOn = Omit<Rule, "command">;
+type RuleCmd = Omit<Rule, "on">;
+type Rules = Array<RuleOn | RuleCmd>;
+
+interface Config {
+    beforeStart: (exec: (command, path?: string) => Promise<void>) => void;
+    beforeEnd: (exec: (command, path?: string) => Promise<void>) => void;
 }
 
-interface ExecTestCmdConfig {
+interface ExecCmdConfig extends Config {
+    command: string[]; // 直接执行命令列表 占位符会被替换
+}
+
+interface ExecTestCmdConfig extends Config {
     exclude?: RegExp[]; // 如果test不为空，路径包含改正则的话不遍历
-    command: string[]; // 执行模式下的命令列表，command中的占位符会被替换
-    test: RegExp; // 遍历文件夹
+    rules: Rules;
 }
 
-interface ExecTestOnConfig {
-    exclude?: RegExp[]; // 如果test不为空，路径包含改正则的话不遍历
-    test: RegExp | RegExp[]; // 匹配则触发on事件
-    on: onFn
-}
 
-type ExecConfig = ExecCmdConfig | ExecTestCmdConfig | ExecTestOnConfig
+type ExecConfig = ExecCmdConfig | ExecTestCmdConfig
 
-interface WatchConfig {
+interface WatchConfig extends Config {
     exclude?: RegExp[]; // 路径包含该正则的话不遍历
     include?: string[] | string; // 要监听的文件夹路径 // 默认为当前文件夹
-    test: RegExp; // 文件监听改动后匹配则触发on事件
-    on: onFn
+    rules: Rules
 }
 
-const abb = {
-    c: "config",
-    s: "search",
-    sf: "search-flag",
-    se: "search-exclude",
-    w: "watch",
-    h: "help",
-    t: "time",
-};
+// 缩写对应的全写
+enum abb {
+    c = "config",
+    s = "search",
+    sf = "search-flag",
+    se = "search-exclude",
+    w = "watch",
+    h = "help",
+    t = "time"
+}
 
 const paramsAbb = createEnumByObj(abb);
+
+function isRuleOn(rule: RuleOn | RuleCmd): rule is RuleOn {
+    return (rule as RuleOn).on !== undefined;
+}
 
 class CommandQueue {
     private readonly params: any;
@@ -58,7 +81,10 @@ class CommandQueue {
         this.params = getParams();
         const time = this.getParamsValue("t");
         time && console.time("time");
-        this.init().finally(() => time && console.timeEnd("time"));
+        this.init().finally(() => {
+            this.config.beforeEnd && this.config.beforeEnd(this.exec);
+            time && console.timeEnd("time");
+        });
     }
 
     async init() {
@@ -78,13 +104,14 @@ class CommandQueue {
             console.error("加载配置文件出错", process.cwd(), configPath);
             return;
         }
+        this.config.beforeStart && this.config.beforeStart(this.exec);
         if (this.getParamsValue("w")) {
             return this.watch();
         } else {
-            if ((this.config as ExecTestCmdConfig).test) {
+            if ((this.config as ExecTestCmdConfig).rules) {
                 return this.foreach();
             } else {
-                return this.mulExec();
+                return this.mulExec((this.config as ExecCmdConfig).command);
             }
         }
 
@@ -97,17 +124,11 @@ class CommandQueue {
     }
 
     async foreach() {
-        const config = this.config as ExecTestOnConfig;
-        const on = config.on ? this.on : this.mulExec;
-        const test = Array.isArray(config.test) ? config.test : [config.test];
+        const config = this.config as ExecTestCmdConfig;
 
-        for (const reg of test) {
-            await forEachDir("./", config.exclude || [], async (path, basename, isDir) => {
-                if (isDir) return;
-                if (!reg.test(basename)) return;
-                await on(path);
-            }, this.params.log);
-        }
+        await forEachDir("./", config.exclude, async (path, basename, isDir) => {
+            return this.test("", path, basename);
+        }, this.params.log);
     }
 
     search() {
@@ -117,12 +138,12 @@ class CommandQueue {
         const reg = new RegExp(search, flag);
         console.log("search", reg);
         const exclude = this.getParamsValue("se")?.split(",").filter(i => i).map(i => new RegExp(i));
-        return forEachDir("./", exclude || [], (path, basename) => {
+        return forEachDir("./", exclude, (path, basename) => {
             if (reg.test(basename)) console.log("result ", path);
         }, this.params.log);
     }
 
-    exec(command, path = "") {
+    exec(command: string, path = "") {
         const cwd = process.cwd();
         const basename = Path.basename(path);
 
@@ -131,7 +152,7 @@ class CommandQueue {
             "\\$FileNameWithoutExtension\\$": basename.split(".").slice(0, -1).join("."),
             "\\$FileNameWithoutAllExtensions\\$": basename.split(".")[0],
             "\\$FileDir\\$": path ? Path.dirname(path) : cwd,
-            "\\$CmdDir\\$": cwd,
+            "\\$Cwd\\$": cwd,
             "\\$SourceFileDir\\$": __dirname,
         };
         const mapKeys = Object.keys(map);
@@ -139,28 +160,35 @@ class CommandQueue {
         return execute(command);
     };
 
-    async mulExec(path = "") {
-        for (const cmd of (this.config as ExecTestCmdConfig).command) {
+    async mulExec(command: string[], path = "") {
+        for (const cmd of command) {
             await this.exec(cmd, path);
         }
     }
 
-    on = (path: string) => {
-        const on = (this.config as WatchConfig).on || (() => Promise.resolve());
-        const ext = Path.extname(path).substr(1);
-        return on(path, ext, this.exec);
-    };
-
-    @Debounce(500)
-    dbOn(path: string) {
-        this.on(path);
-    };
+    async test(eventName: string, path: string, basename: string) {
+        const rules = (this.config as WatchConfig).rules;
+        if (!rules) return;
+        for (const rule of rules) {
+            if (!rule.test.test(basename)) continue;
+            if (isRuleOn(rule)) {
+                await rule.on(eventName, path, Path.extname(path).substr(1), this.exec);
+            } else {
+                await this.mulExec((rule as RuleCmd).command, path);
+            }
+        }
+    }
 
     async watch() {
         const config = this.config as WatchConfig;
         const watchArr = this.watchArr;
-        if (typeOf(config.on) !== "function") throw new TypeError("on required");
-        if (typeOf(config.test) !== "regexp") throw new TypeError("test required");
+
+        if (!config.rules) throw new TypeError("rules required");
+        // 编辑器修改保存时会触发多次change事件
+        config.rules.forEach(item => {
+            if (!isRuleOn(item)) return;
+            item.on = debouncePromise(item.on, 50);
+        });
 
         const fs = require("fs");
         const watch = (path) => {
@@ -168,13 +196,14 @@ class CommandQueue {
             watchArr.push(path);
             console.log("对" + path + "文件夹添加监听\n");
 
-            const watchCB = async (e, f) => {
-                if (!f) throw new Error("文件名未提供");
-                const filePath = Path.resolve(path, f);
+            const watchCB = async (eventType: string, filename: string) => {
+                if (!filename) throw new Error("文件名未提供");
+                const filePath = Path.resolve(path, filename);
+                this.params.log && console.log(eventType, filePath);
                 // 判断是否需要监听的文件类型
-                if (!config.test.test(String.raw`${f}`)) return;
                 try {
                     const exist = await fs.existsSync(filePath);
+                    await this.test(exist ? eventType : "delete", filePath, filename);
                     if (!exist) {
                         console.log(filePath, "已删除!");
                         // 删除过的需要在watchArr里面去掉，否则重新建一个相同名称的目录不会添加监听
@@ -193,10 +222,6 @@ class CommandQueue {
                     console.log("watch try catch", e, filePath);
                 }
 
-                console.log('监听到', filePath, '文件有改动');
-
-                // 改动一个文件会触发多次该回调
-                this.dbOn(filePath);
             };
 
             const watcher = fs.watch(path, null, watchCB);

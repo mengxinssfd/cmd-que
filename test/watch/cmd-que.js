@@ -1,8 +1,17 @@
+// node src/index.js -c=test/watch/cmd-que.js -w -log
 module.exports = {
+    beforeStart() {
+        // console.log("start", debounce)
+    },
+    beforeEnd() {
+        console.log("end")
+    },
     rules: [
         {
             test: /\.(styl|ts)$/,
-            on(path, ext, exec) {
+            on: (eventName, path, ext, exec) => {
+                console.log(path, ext)
+                if (eventName === "delete") return;
                 const types = {
                     styl: "styl",
                     ts: "ts",
@@ -15,11 +24,18 @@ module.exports = {
             }
         },
         {
-            test: /\.pug$/,
-            on(path, ext, exec) {
-                return exec("pug $FileDir$", path)
+            test: /\.styl$/,
+            on: (eventName, path, ext, exec) => {
+                console.log("test styl")
             }
-        }
+        },
+        /*  {
+              test: /\.pug$/,
+              on(eventName, path, ext, exec) {
+                  if (eventName === "delete") return;
+                  return exec("pug $FileDir$", path)
+              }
+          }*/
     ],
     exclude: [
         /node_modules/,

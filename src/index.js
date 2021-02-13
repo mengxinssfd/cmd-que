@@ -3,12 +3,6 @@ var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cook
     if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
     return cooked;
 };
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -49,29 +43,32 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var utils_1 = require("./utils");
 var Path = require("path");
 var process = require("process");
-var abb = {
-    c: "config",
-    s: "search",
-    sf: "search-flag",
-    se: "search-exclude",
-    w: "watch",
-    h: "help",
-    t: "time",
-};
+// 缩写对应的全写
+var abb;
+(function (abb) {
+    abb["c"] = "config";
+    abb["s"] = "search";
+    abb["sf"] = "search-flag";
+    abb["se"] = "search-exclude";
+    abb["w"] = "watch";
+    abb["h"] = "help";
+    abb["t"] = "time";
+})(abb || (abb = {}));
 var paramsAbb = utils_1.createEnumByObj(abb);
+function isRuleOn(rule) {
+    return rule.on !== undefined;
+}
 var CommandQueue = /** @class */ (function () {
     function CommandQueue() {
         var _this = this;
         this.watchArr = [];
-        this.on = function (path) {
-            var on = _this.config.on || (function () { return Promise.resolve(); });
-            var ext = Path.extname(path).substr(1);
-            return on(path, ext, _this.exec);
-        };
         this.params = utils_1.getParams();
         var time = this.getParamsValue("t");
         time && console.time("time");
-        this.init().finally(function () { return time && console.timeEnd("time"); });
+        this.init().finally(function () {
+            _this.config.beforeEnd && _this.config.beforeEnd(_this.exec);
+            time && console.timeEnd("time");
+        });
     }
     CommandQueue.prototype.init = function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -92,15 +89,16 @@ var CommandQueue = /** @class */ (function () {
                     console.error("加载配置文件出错", process.cwd(), configPath);
                     return [2 /*return*/];
                 }
+                this.config.beforeStart && this.config.beforeStart(this.exec);
                 if (this.getParamsValue("w")) {
                     return [2 /*return*/, this.watch()];
                 }
                 else {
-                    if (this.config.test) {
+                    if (this.config.rules) {
                         return [2 /*return*/, this.foreach()];
                     }
                     else {
-                        return [2 /*return*/, this.mulExec()];
+                        return [2 /*return*/, this.mulExec(this.config.command)];
                     }
                 }
                 return [2 /*return*/];
@@ -114,52 +112,20 @@ var CommandQueue = /** @class */ (function () {
     };
     CommandQueue.prototype.foreach = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var config, on, test, _loop_1, this_1, _i, test_1, reg;
+            var config;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         config = this.config;
-                        on = config.on ? this.on : this.mulExec;
-                        test = Array.isArray(config.test) ? config.test : [config.test];
-                        _loop_1 = function (reg) {
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0: return [4 /*yield*/, utils_1.forEachDir("./", config.exclude || [], function (path, basename, isDir) { return __awaiter(_this, void 0, void 0, function () {
-                                            return __generator(this, function (_a) {
-                                                switch (_a.label) {
-                                                    case 0:
-                                                        if (isDir)
-                                                            return [2 /*return*/];
-                                                        if (!reg.test(basename))
-                                                            return [2 /*return*/];
-                                                        return [4 /*yield*/, on(path)];
-                                                    case 1:
-                                                        _a.sent();
-                                                        return [2 /*return*/];
-                                                }
-                                            });
-                                        }); }, this_1.params.log)];
-                                    case 1:
-                                        _a.sent();
-                                        return [2 /*return*/];
-                                }
-                            });
-                        };
-                        this_1 = this;
-                        _i = 0, test_1 = test;
-                        _a.label = 1;
+                        return [4 /*yield*/, utils_1.forEachDir("./", config.exclude, function (path, basename, isDir) { return __awaiter(_this, void 0, void 0, function () {
+                                return __generator(this, function (_a) {
+                                    return [2 /*return*/, this.test("", path, basename)];
+                                });
+                            }); }, this.params.log)];
                     case 1:
-                        if (!(_i < test_1.length)) return [3 /*break*/, 4];
-                        reg = test_1[_i];
-                        return [5 /*yield**/, _loop_1(reg)];
-                    case 2:
                         _a.sent();
-                        _a.label = 3;
-                    case 3:
-                        _i++;
-                        return [3 /*break*/, 1];
-                    case 4: return [2 /*return*/];
+                        return [2 /*return*/];
                 }
             });
         });
@@ -173,7 +139,7 @@ var CommandQueue = /** @class */ (function () {
         var reg = new RegExp(search, flag);
         console.log("search", reg);
         var exclude = (_a = this.getParamsValue("se")) === null || _a === void 0 ? void 0 : _a.split(",").filter(function (i) { return i; }).map(function (i) { return new RegExp(i); });
-        return utils_1.forEachDir("./", exclude || [], function (path, basename) {
+        return utils_1.forEachDir("./", exclude, function (path, basename) {
             if (reg.test(basename))
                 console.log("result ", path);
         }, this.params.log);
@@ -187,7 +153,7 @@ var CommandQueue = /** @class */ (function () {
             "\\$FileNameWithoutExtension\\$": basename.split(".").slice(0, -1).join("."),
             "\\$FileNameWithoutAllExtensions\\$": basename.split(".")[0],
             "\\$FileDir\\$": path ? Path.dirname(path) : cwd,
-            "\\$CmdDir\\$": cwd,
+            "\\$Cwd\\$": cwd,
             "\\$SourceFileDir\\$": __dirname,
         };
         var mapKeys = Object.keys(map);
@@ -195,22 +161,22 @@ var CommandQueue = /** @class */ (function () {
         return utils_1.execute(command);
     };
     ;
-    CommandQueue.prototype.mulExec = function (path) {
+    CommandQueue.prototype.mulExec = function (command, path) {
         if (path === void 0) { path = ""; }
         return __awaiter(this, void 0, void 0, function () {
-            var _i, _a, cmd;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var _i, command_1, cmd;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
-                        _i = 0, _a = this.config.command;
-                        _b.label = 1;
+                        _i = 0, command_1 = command;
+                        _a.label = 1;
                     case 1:
-                        if (!(_i < _a.length)) return [3 /*break*/, 4];
-                        cmd = _a[_i];
+                        if (!(_i < command_1.length)) return [3 /*break*/, 4];
+                        cmd = command_1[_i];
                         return [4 /*yield*/, this.exec(cmd, path)];
                     case 2:
-                        _b.sent();
-                        _b.label = 3;
+                        _a.sent();
+                        _a.label = 3;
                     case 3:
                         _i++;
                         return [3 /*break*/, 1];
@@ -219,10 +185,39 @@ var CommandQueue = /** @class */ (function () {
             });
         });
     };
-    CommandQueue.prototype.dbOn = function (path) {
-        this.on(path);
+    CommandQueue.prototype.test = function (eventName, path, basename) {
+        return __awaiter(this, void 0, void 0, function () {
+            var rules, _i, rules_1, rule;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        rules = this.config.rules;
+                        if (!rules)
+                            return [2 /*return*/];
+                        _i = 0, rules_1 = rules;
+                        _a.label = 1;
+                    case 1:
+                        if (!(_i < rules_1.length)) return [3 /*break*/, 6];
+                        rule = rules_1[_i];
+                        if (!rule.test.test(basename))
+                            return [3 /*break*/, 5];
+                        if (!isRuleOn(rule)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, rule.on(eventName, path, Path.extname(path).substr(1), this.exec)];
+                    case 2:
+                        _a.sent();
+                        return [3 /*break*/, 5];
+                    case 3: return [4 /*yield*/, this.mulExec(rule.command, path)];
+                    case 4:
+                        _a.sent();
+                        _a.label = 5;
+                    case 5:
+                        _i++;
+                        return [3 /*break*/, 1];
+                    case 6: return [2 /*return*/];
+                }
+            });
+        });
     };
-    ;
     CommandQueue.prototype.watch = function () {
         return __awaiter(this, void 0, void 0, function () {
             var config, watchArr, fs, watch, include, includes, _i, includes_1, path;
@@ -232,33 +227,38 @@ var CommandQueue = /** @class */ (function () {
                     case 0:
                         config = this.config;
                         watchArr = this.watchArr;
-                        if (utils_1.typeOf(config.on) !== "function")
-                            throw new TypeError("on required");
-                        if (utils_1.typeOf(config.test) !== "regexp")
-                            throw new TypeError("test required");
+                        if (!config.rules)
+                            throw new TypeError("rules required");
+                        // 编辑器修改保存时会触发多次change事件
+                        config.rules.forEach(function (item) {
+                            if (!isRuleOn(item))
+                                return;
+                            item.on = utils_1.debouncePromise(item.on, 50);
+                        });
                         fs = require("fs");
                         watch = function (path) {
                             if (watchArr.indexOf(path) > -1)
                                 return;
                             watchArr.push(path);
                             console.log("对" + path + "文件夹添加监听\n");
-                            var watchCB = function (e, f) { return __awaiter(_this, void 0, void 0, function () {
+                            var watchCB = function (eventType, filename) { return __awaiter(_this, void 0, void 0, function () {
                                 var filePath, exist, index, stat, e_1;
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
                                         case 0:
-                                            if (!f)
+                                            if (!filename)
                                                 throw new Error("文件名未提供");
-                                            filePath = Path.resolve(path, f);
-                                            // 判断是否需要监听的文件类型
-                                            if (!config.test.test(String.raw(templateObject_2 || (templateObject_2 = __makeTemplateObject(["", ""], ["", ""])), f)))
-                                                return [2 /*return*/];
+                                            filePath = Path.resolve(path, filename);
+                                            this.params.log && console.log(eventType, filePath);
                                             _a.label = 1;
                                         case 1:
-                                            _a.trys.push([1, 4, , 5]);
+                                            _a.trys.push([1, 5, , 6]);
                                             return [4 /*yield*/, fs.existsSync(filePath)];
                                         case 2:
                                             exist = _a.sent();
+                                            return [4 /*yield*/, this.test(exist ? eventType : "delete", filePath, filename)];
+                                        case 3:
+                                            _a.sent();
                                             if (!exist) {
                                                 console.log(filePath, "已删除!");
                                                 index = watchArr.indexOf(filePath);
@@ -268,21 +268,17 @@ var CommandQueue = /** @class */ (function () {
                                                 return [2 /*return*/];
                                             }
                                             return [4 /*yield*/, fs.statSync(filePath)];
-                                        case 3:
+                                        case 4:
                                             stat = _a.sent();
                                             if (stat.isDirectory()) {
                                                 utils_1.forEachDir(filePath, config.exclude, watch, this.params.log);
                                             }
-                                            return [3 /*break*/, 5];
-                                        case 4:
+                                            return [3 /*break*/, 6];
+                                        case 5:
                                             e_1 = _a.sent();
                                             console.log("watch try catch", e_1, filePath);
-                                            return [3 /*break*/, 5];
-                                        case 5:
-                                            console.log('监听到', filePath, '文件有改动');
-                                            // 改动一个文件会触发多次该回调
-                                            this.dbOn(filePath);
-                                            return [2 /*return*/];
+                                            return [3 /*break*/, 6];
+                                        case 6: return [2 /*return*/];
                                     }
                                 });
                             }); };
@@ -316,10 +312,7 @@ var CommandQueue = /** @class */ (function () {
     CommandQueue.prototype.showHelp = function () {
         console.log("\n            -config/-c=             \u914D\u7F6E\u7684\u8DEF\u5F84\n            -help/-h                \u5E2E\u52A9\n            -search/-s=             \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939\n            -search-flag/-sf=       \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 /\\w+/flag\n            -search-exclude/-se=    \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 \u5FFD\u7565\u6587\u4EF6\u5939 \u591A\u4E2A\u7528\u9017\u53F7(,)\u9694\u5F00\n            -watch/-w               \u76D1\u542C\u6587\u4EF6\u6539\u53D8 \u4E0E-config\u642D\u914D\u4F7F\u7528\n            -log                    \u904D\u5386\u6587\u4EF6\u5939\u65F6\u662F\u5426\u663E\u793A\u904D\u5386log\n            -time/t                 \u663E\u793A\u6267\u884C\u4EE3\u7801\u6240\u82B1\u8D39\u7684\u65F6\u95F4\n        ");
     };
-    __decorate([
-        utils_1.Debounce(500)
-    ], CommandQueue.prototype, "dbOn", null);
     return CommandQueue;
 }());
 new CommandQueue();
-var templateObject_1, templateObject_2;
+var templateObject_1;
