@@ -121,8 +121,6 @@ export async function forEachDir(
         const isDir = stats.isDirectory();
         const basename = Path.basename(path);
 
-        exclude = exclude || [];
-
         const isExclude = () => {
             const raw = String.raw`${path}`;
             return exclude.some((item) => item.test(raw));
@@ -133,7 +131,7 @@ export async function forEachDir(
         const callback = cb || ((path, isDir) => undefined);
         const isStop = await callback(path, basename, isDir);
 
-        if (!isDir || isStop) {
+        if (!isDir || isStop === true) {
             return;
         }
 

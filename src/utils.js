@@ -188,7 +188,6 @@ function forEachDir(path, exclude, cb, showLog) {
                     stats = _a.sent();
                     isDir = stats.isDirectory();
                     basename = Path.basename(path);
-                    exclude = exclude || [];
                     isExclude = function () {
                         var raw = String.raw(templateObject_1 || (templateObject_1 = __makeTemplateObject(["", ""], ["", ""])), path);
                         return exclude.some(function (item) { return item.test(raw); });
@@ -199,7 +198,7 @@ function forEachDir(path, exclude, cb, showLog) {
                     return [4 /*yield*/, callback(path, basename, isDir)];
                 case 2:
                     isStop = _a.sent();
-                    if (!isDir || isStop) {
+                    if (!isDir || isStop === true) {
                         return [2 /*return*/];
                     }
                     return [4 /*yield*/, fs.readdirSync(path)];

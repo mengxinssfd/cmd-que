@@ -1,4 +1,3 @@
-"use strict";
 var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
     if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
     return cooked;
@@ -39,100 +38,100 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
-exports.forEachDir = void 0;
-var util = require("util");
 var childProcess = require('child_process');
-var exec = util.promisify(childProcess.exec); // 这里把exec promise化
-function execute(cmd) {
+var util = require("util");
+var exec = util.promisify(childProcess.exec);
+(function () {
     return __awaiter(this, void 0, void 0, function () {
-        var stdout, e_1;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    console.log('执行"' + cmd + '"命令...');
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, exec(cmd)];
-                case 2:
-                    stdout = (_a.sent()).stdout;
-                    console.log('执行成功!!');
-                    console.log(stdout); // 输出命令结果
-                    return [3 /*break*/, 4];
-                case 3:
-                    e_1 = _a.sent();
-                    console.log('执行失败');
-                    console.log('\n\n*******************************************');
-                    console.log(e_1.stdout); // 输出命令错误信息
-                    console.log('*******************************************\n\n');
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
-            }
-        });
-    });
-}
-var fs = require("fs");
-var Path = require("path");
-// execute("node -v")
-function forEachDir(path, exclude, cb) {
-    return __awaiter(this, void 0, void 0, function () {
-        var raw_1, isExclude, stats, isDir, callback, isStop, dir, _i, dir_1, d, p, e_2;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 8, , 9]);
-                    raw_1 = String.raw(templateObject_1 || (templateObject_1 = __makeTemplateObject(["", ""], ["", ""])), path);
-                    isExclude = exclude.some(function (item) { return item.test(raw_1); });
-                    if (isExclude)
-                        return [2 /*return*/];
-                    return [4 /*yield*/, fs.statSync(path)];
-                case 1:
-                    stats = _a.sent();
-                    isDir = stats.isDirectory();
-                    callback = cb || (function (path, isDir) { return undefined; });
-                    return [4 /*yield*/, callback(path, isDir)];
-                case 2:
-                    isStop = _a.sent();
-                    // 如果是文件或者回调返回true则停止
-                    if (!isDir || isStop) {
-                        return [2 /*return*/];
+        function execute(cmd) {
+            return __awaiter(this, void 0, void 0, function () {
+                var stdout, e_1;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            console.log('执行"' + cmd + '"命令...');
+                            _a.label = 1;
+                        case 1:
+                            _a.trys.push([1, 3, , 4]);
+                            return [4 /*yield*/, exec(cmd)];
+                        case 2:
+                            stdout = (_a.sent()).stdout;
+                            console.log('success!');
+                            console.log(stdout); // 命令执行成功结果
+                            return [2 /*return*/, stdout];
+                        case 3:
+                            e_1 = _a.sent();
+                            console.log('执行失败');
+                            console.log(e_1.stderr);
+                            return [2 /*return*/, e_1.stderr]; // 命令执行error信息
+                        case 4: return [2 /*return*/];
                     }
-                    return [4 /*yield*/, fs.readdirSync(path)];
-                case 3:
-                    dir = _a.sent();
-                    _i = 0, dir_1 = dir;
-                    _a.label = 4;
-                case 4:
-                    if (!(_i < dir_1.length)) return [3 /*break*/, 7];
-                    d = dir_1[_i];
-                    p = Path.resolve(path, d);
-                    return [4 /*yield*/, forEachDir(p, exclude, cb)];
-                case 5:
+                });
+            });
+        }
+        function forEachDir(path, exclude, cb) {
+            if (exclude === void 0) { exclude = []; }
+            return __awaiter(this, void 0, void 0, function () {
+                var stats, isDir, basename, isExclude, callback, isStop, dir, _i, dir_1, d, p, e_2;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            _a.trys.push([0, 8, , 9]);
+                            return [4 /*yield*/, fs.statSync(path)];
+                        case 1:
+                            stats = _a.sent();
+                            isDir = stats.isDirectory();
+                            basename = Path.basename(path);
+                            isExclude = function () {
+                                var raw = String.raw(__makeTemplateObject(["", ""], ["", ""]), path); // 路径必须raw，否则正则匹配不上
+                                return exclude.some(function (item) { return item.test(raw); }); // 判断该路径是否是忽略的
+                            };
+                            if (isDir && isExclude())
+                                return [2 /*return*/];
+                            callback = cb || (function (path, isDir) { return undefined; });
+                            return [4 /*yield*/, callback(path, basename, isDir)];
+                        case 2:
+                            isStop = _a.sent();
+                            if (!isDir || isStop) {
+                                return [2 /*return*/];
+                            }
+                            return [4 /*yield*/, fs.readdirSync(path)];
+                        case 3:
+                            dir = _a.sent();
+                            _i = 0, dir_1 = dir;
+                            _a.label = 4;
+                        case 4:
+                            if (!(_i < dir_1.length)) return [3 /*break*/, 7];
+                            d = dir_1[_i];
+                            p = Path.resolve(path, d);
+                            return [4 /*yield*/, forEachDir(p, exclude, cb)];
+                        case 5:
+                            _a.sent();
+                            _a.label = 6;
+                        case 6:
+                            _i++;
+                            return [3 /*break*/, 4];
+                        case 7: return [3 /*break*/, 9];
+                        case 8:
+                            e_2 = _a.sent();
+                            return [2 /*return*/, Promise.reject(e_2)];
+                        case 9: return [2 /*return*/];
+                    }
+                });
+            });
+        }
+        var fs, Path;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: 
+                // execute("node -v");
+                return [4 /*yield*/, execute("node -v")];
+                case 1:
+                    // execute("node -v");
                     _a.sent();
-                    _a.label = 6;
-                case 6:
-                    _i++;
-                    return [3 /*break*/, 4];
-                case 7: return [3 /*break*/, 9];
-                case 8:
-                    e_2 = _a.sent();
-                    return [2 /*return*/, Promise.reject(e_2)];
-                case 9: return [2 /*return*/];
+                    execute("npm -v");
+                    return [2 /*return*/];
             }
         });
     });
-}
-exports.forEachDir = forEachDir;
-/*
-forEachDir("./", [], async (path, isDir) => {
-    if(isDir || Path.extname(path) !== ".ts")return;
-    const cmd = [
-        "tsc "+path,
-        ""
-    ]
-    if (!test.test(path)) return;
-    await this.mulExec(path);
-})*/ ;
-console.log(Path.basename('/目录1/目录2'));
-var templateObject_1;
+})();

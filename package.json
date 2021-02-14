@@ -1,10 +1,10 @@
 {
   "name": "@mxssfd/cmd-que",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "command queue",
   "main": "index.js",
   "bin": {
-    "cmd-que": "bin/watch"
+    "cmd-que": "bin/index"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

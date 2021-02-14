@@ -1,66 +1,70 @@
-const util = require("util");
 const childProcess = require('child_process');
-const exec = util.promisify(childProcess.exec); // 这里把exec promise化
+const util = require("util");
+const exec = util.promisify(childProcess.exec);
 
-async function execute(cmd: string) {
-    console.log('执行"' + cmd + '"命令...');
-    try {
-        const {stdout} = await exec(cmd);  // 执行命令
-        console.log('执行成功!!');
-        console.log(stdout); // 输出命令结果
-    } catch (e) {
-        console.log('执行失败');
-        console.log('\n\n*******************************************');
-        console.log(e.stdout); // 输出命令错误信息
-        console.log('*******************************************\n\n');
-    }
-}
+(async function () {
 
-const fs = require("fs");
-const Path = require("path");
-// execute("node -v")
-export async function forEachDir(
-    path: string,
-    exclude: RegExp[],
-    cb?: (path: string, isDir: boolean) => true | void | Promise<true | void>,
-) {
-    try {
-        // 判读是否忽略文件夹
-        const raw = String.raw`${path}`;
-        const isExclude = exclude.some((item) => item.test(raw));
-        if (isExclude) return;
-
-        // 是否文件夹
-        const stats = await fs.statSync(path);
-        const isDir = stats.isDirectory();
-        // 执行回调
-        const callback = cb || ((path, isDir) => undefined);
-        const isStop = await callback(path, isDir);
-
-        // 如果是文件或者回调返回true则停止
-        if (!isDir || isStop) {
-            return;
+    async function execute(cmd: string): Promise<string> {
+        console.log('执行"' + cmd + '"命令...');
+        try {
+            const {stdout} = await exec(cmd);
+            console.log('success!');
+            console.log(stdout); // 命令执行成功结果
+            return stdout;
+        } catch (e) {
+            console.log('执行失败');
+            console.log(e.stderr);
+            return e.stderr; // 命令执行error信息
         }
-
-        // 如果是文件夹则递归遍历
-        const dir = await fs.readdirSync(path);
-        for (const d of dir) {
-            const p = Path.resolve(path, d);
-            await forEachDir(p, exclude, cb);
-        }
-    } catch (e) {
-        return Promise.reject(e);
     }
-}
-/*
-forEachDir("./", [], async (path, isDir) => {
-    if(isDir || Path.extname(path) !== ".ts")return;
-    const cmd = [
-        "tsc "+path,
-        ""
-    ]
-    if (!test.test(path)) return;
-    await this.mulExec(path);
-})*/;
 
-console.log(Path.basename('/目录1/目录2'));
+    // execute("node -v");
+
+    await execute("node -v");
+    execute("npm -v");
+    return
+
+    const fs = require("fs");
+    const Path = require("path");
+
+    async function forEachDir(
+        path: string,
+        exclude: RegExp[] = [],
+        cb?: (path: string, basename: string, isDir: boolean) => true | void | Promise<true | unknown>,
+    ) {
+        try {
+            const stats = await fs.statSync(path);
+            const isDir = stats.isDirectory();
+            const basename = Path.basename(path);
+
+            const isExclude = () => {
+                const raw = String.raw`${path}`; // 路径必须raw，否则正则匹配不上
+                return exclude.some((item) => item.test(raw)); // 判断该路径是否是忽略的
+            };
+            if (isDir && isExclude()) return;
+
+            const callback = cb || ((path, isDir) => undefined);
+            const isStop = await callback(path, basename, isDir); // 当回调函数返回true的时候停止执行后面的
+
+            if (!isDir || isStop) {
+                return;
+            }
+
+            // 递归遍历文件夹
+            const dir = await fs.readdirSync(path);
+            for (const d of dir) {
+                const p = Path.resolve(path, d);
+                await forEachDir(p, exclude, cb);
+            }
+        } catch (e) {
+            return Promise.reject(e);
+        }
+    }
+
+    forEachDir("../test", [], (path, basename, isDir) => {
+        if (isDir) return;
+        const test = /\.styl$/;
+        if (!test.test(basename)) return;
+        return execute("stylus " + path);
+    });
+})();
