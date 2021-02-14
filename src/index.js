@@ -54,9 +54,9 @@ var Abb;
     Abb["watch"] = "w";
     Abb["help"] = "h";
     Abb["time"] = "t";
+    Abb["command"] = "cmd";
 })(Abb || (Abb = {}));
 var paramsAbb = utils_1.createEnumByObj(Abb);
-// TODO 挂载在webstorm file watcher上的话参数无法传递
 var CommandQueue = /** @class */ (function () {
     function CommandQueue() {
         var _this = this;
@@ -72,13 +72,18 @@ var CommandQueue = /** @class */ (function () {
     }
     CommandQueue.prototype.init = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var cp, configPath;
+            var cmd, command, cp, configPath;
             return __generator(this, function (_a) {
                 if (utils_1.isEmptyParams() || this.getParamsValue(Abb.help)) {
                     return [2 /*return*/, CommandQueue.showHelp()];
                 }
                 if (this.getParamsValue(Abb.search)) {
                     return [2 /*return*/, this.search()];
+                }
+                cmd = this.getParamsValue(Abb.command);
+                if (cmd) {
+                    command = cmd.split(",");
+                    return [2 /*return*/, this.mulExec(command)];
                 }
                 cp = this.getParamsValue(Abb.config);
                 configPath = Path.resolve(process.cwd(), cp);
@@ -325,7 +330,7 @@ var CommandQueue = /** @class */ (function () {
         });
     };
     CommandQueue.showHelp = function () {
-        console.log("\n            -config/-c=             \u914D\u7F6E\u7684\u8DEF\u5F84\n            -help/-h                \u5E2E\u52A9\n            -search/-s=             \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939\n            -search-flag/-sf=       \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 /\\w+/flag\n            -search-exclude/-se=    \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 \u5FFD\u7565\u6587\u4EF6\u5939 \u591A\u4E2A\u7528\u9017\u53F7(,)\u9694\u5F00\n            -watch/-w               \u76D1\u542C\u6587\u4EF6\u6539\u53D8 \u4E0E-config\u642D\u914D\u4F7F\u7528\n            -log                    \u904D\u5386\u6587\u4EF6\u5939\u65F6\u662F\u5426\u663E\u793A\u904D\u5386log\n            -time/t                 \u663E\u793A\u6267\u884C\u4EE3\u7801\u6240\u82B1\u8D39\u7684\u65F6\u95F4\n        ");
+        console.log("\n            -config/-c=             \u914D\u7F6E\u7684\u8DEF\u5F84\n            -help/-h                \u5E2E\u52A9\n            -search/-s=             \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939\n            -search-flag/-sf=       \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 /\\w+/flag\n            -search-exclude/-se=    \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 \u5FFD\u7565\u6587\u4EF6\u5939 \u591A\u4E2A\u7528\u9017\u53F7(,)\u9694\u5F00\n            -watch/-w               \u76D1\u542C\u6587\u4EF6\u6539\u53D8 \u4E0E-config\u642D\u914D\u4F7F\u7528\n            -log                    \u904D\u5386\u6587\u4EF6\u5939\u65F6\u662F\u5426\u663E\u793A\u904D\u5386log\n            -time/t                 \u663E\u793A\u6267\u884C\u4EE3\u7801\u6240\u82B1\u8D39\u7684\u65F6\u95F4\n            -command/-cmd=          \u901A\u8FC7\u547D\u4EE4\u884C\u6267\u884C\u547D\u4EE4 \u591A\u4E2A\u5219\u7528\u9017\u53F7(,)\u9694\u5F00 \u5FC5\u987B\u8981\u7528\u5F15\u53F7\u5F15\u8D77\u6765\n        ");
     };
     return CommandQueue;
 }());

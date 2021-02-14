@@ -357,14 +357,15 @@ function execute(cmd) {
                     console.log('success!');
                     // console.log('\n\n*************************命令输出start*************************');
                     console.log(stdout);
-                    return [3 /*break*/, 4];
+                    // console.log('*************************命令输出end*******************\n\n');
+                    return [2 /*return*/, stdout];
                 case 3:
                     e_2 = _a.sent();
                     console.log('执行失败');
                     console.log('\n\n*******************************************');
                     console.log(e_2.stderr);
                     console.log('*******************************************\n\n');
-                    return [3 /*break*/, 4];
+                    return [2 /*return*/, e_2.stderr];
                 case 4: return [2 /*return*/];
             }
         });

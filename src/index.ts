@@ -12,7 +12,6 @@ import {WatchConfig, ExecCmdConfig, isRuleOn} from "./configFileTypes";
 const Path = require("path");
 const process = require("process");
 
-
 // 全写对应的缩写
 enum Abb {
     config = "c",
@@ -21,12 +20,12 @@ enum Abb {
     "search-exclude" = "se",
     watch = "w",
     help = "h",
-    time = "t"
+    time = "t",
+    command = "cmd"
 }
 
 const paramsAbb = createEnumByObj(Abb);
 
-// TODO 挂载在webstorm file watcher上的话参数无法传递
 class CommandQueue {
     private readonly params: any;
     private config!: ExecCmdConfig | WatchConfig;
@@ -50,6 +49,12 @@ class CommandQueue {
 
         if (this.getParamsValue(Abb.search)) {
             return this.search();
+        }
+
+        const cmd = this.getParamsValue(Abb.command);
+        if (cmd) {
+            const command = cmd.split(",");
+            return this.mulExec(command);
         }
 
         const cp = this.getParamsValue(Abb.config);
@@ -227,6 +232,7 @@ class CommandQueue {
             -watch/-w               监听文件改变 与-config搭配使用
             -log                    遍历文件夹时是否显示遍历log
             -time/t                 显示执行代码所花费的时间
+            -command/-cmd=          通过命令行执行命令 多个则用逗号(,)隔开 必须要用引号引起来
         `);
     }
 }

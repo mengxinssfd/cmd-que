@@ -216,7 +216,7 @@ function getTime(): string {
 }
 
 
-export async function execute(cmd: string) {
+export async function execute(cmd: string): Promise<string> {
     console.log(getTime(), '执行"' + cmd + '"命令...');
     try {
         const {stdout} = await exec(cmd);
@@ -224,11 +224,13 @@ export async function execute(cmd: string) {
         // console.log('\n\n*************************命令输出start*************************');
         console.log(stdout);
         // console.log('*************************命令输出end*******************\n\n');
+        return stdout;
     } catch (e) {
         console.log('执行失败');
         console.log('\n\n*******************************************');
         console.log(e.stderr);
         console.log('*******************************************\n\n');
+        return e.stderr;
     }
 }
 

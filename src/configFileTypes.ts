@@ -1,4 +1,4 @@
-type execFn = (command: string) => Promise<void>;
+type execFn = (command: string) => Promise<string>;
 
 /**
  * @param eventName 事件名

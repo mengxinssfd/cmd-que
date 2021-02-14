@@ -13,9 +13,10 @@ module.exports = {
     rules: [
         {
             test: /\.styl$/,
-            on: (eventName, path, ext, exec) => {
+            on: async (eventName, path, ext, exec) => {
                 if (eventName === "delete") return;
-                return exec("stylus $FilePath$");
+                const result = await exec("stylus $FilePath$");
+                console.log(result)
             }
         },
         {
