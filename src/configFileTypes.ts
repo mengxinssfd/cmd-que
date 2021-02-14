@@ -15,7 +15,7 @@ type Rule = {
     command: string[];
 };
 
-type RuleOn = Omit<Rule, "command">;
+export type RuleOn = Omit<Rule, "command">;
 type RuleCmd = Omit<Rule, "on">;
 type Rules = Array<RuleOn | RuleCmd>;
 

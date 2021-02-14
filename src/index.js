@@ -250,10 +250,10 @@ var CommandQueue = /** @class */ (function () {
                             throw new TypeError("rules required");
                         // 编辑器修改保存时会触发多次change事件
                         config.rules.forEach(function (item) {
-                            if (!configFileTypes_1.isRuleOn(item))
-                                return;
                             // 可能会有机器会慢一点 如果有再把间隔调大一点
-                            item.on = utils_1.debouncePromise(item.on, 1);
+                            item.on = utils_1.debouncePromise(configFileTypes_1.isRuleOn(item) ? item.on : function (e, p) {
+                                return _this.mulExec(item.command, p);
+                            }, 1);
                         });
                         FS = require("fs");
                         watch = function (path) {

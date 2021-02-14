@@ -7,7 +7,7 @@ import {
     isEmptyParams,
 } from "./utils";
 
-import {WatchConfig, ExecCmdConfig, isRuleOn} from "./configFileTypes";
+import {WatchConfig, ExecCmdConfig, isRuleOn, RuleOn} from "./configFileTypes";
 
 const Path = require("path");
 const process = require("process");
@@ -165,9 +165,10 @@ class CommandQueue {
         if (!config.rules) throw new TypeError("rules required");
         // 编辑器修改保存时会触发多次change事件
         config.rules.forEach(item => {
-            if (!isRuleOn(item)) return;
             // 可能会有机器会慢一点 如果有再把间隔调大一点
-            item.on = debouncePromise(item.on, 1);
+            (item as RuleOn).on = debouncePromise(isRuleOn(item) ? item.on : (e, p) => {
+                return this.mulExec(item.command, p);
+            }, 1);
         });
 
         const FS = require("fs");
