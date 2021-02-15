@@ -14,42 +14,78 @@
 好在这些预编译语言都提供cli工具可在控制台输入命令行编译，那么完全可以把它们的命令关联起来，做一个批量执行的工具。其实shell脚本也可以完成这些功能， 但是其一shell在windows上的话只能在git
 bash里运行，在cmd控制台上不能运行，需要专门打开一个git bash，少了一点便利性；其二在windows上不能监听文件变化。 那么既然nodejs能够胜任，那么用前端熟悉的js做岂不美哉。
 
-ok，那么接下来进入正文吧(源码见底部github链接)。
 ## 需求：
+
+1. 通过控制台输入指令启动
+1. 运行
+    - 控制台命令行输入命令执行
+    - 通过指定配置文件执行
+1. 执行方式
 1. 执行命令
-   - url模板替换；
+    - url模板替换；
 1. 遍历文件夹
 1. 监听文件改动
-   - 多个监听文件夹入口
+    - 多个监听文件夹入口
 1. 接收控制台命令参数
 1. 配置
-   - 依次执行多个命令；
-   - 生命周期回调
-   - 忽略文件夹
-   - 匹配规则
-      - 匹配成功
-         - 执行相应命令；
-         - 执行相应js；
+    - 依次执行多个命令；
+    - 生命周期回调
+    - 忽略文件夹
+    - 匹配规则
+        - 匹配成功
+            - 执行相应命令；
+            - 执行相应js；
 1. 前后生命周期
-1. 可通过控制台命令行直接执行相应命令
+
 1. 可通过指令显示隐藏log
 1. 可通过指令显示隐藏运行时间
 1. npm全局一次安装，随处执行
 1. 帮助功能
 1. 搜索
-   - 搜索文件或文件夹
-   - 忽略大小写
-   - 忽略文件夹
+    - 搜索文件或文件夹
+    - 忽略大小写
+    - 忽略文件夹
+
+ok，那么接下来进入正文吧(源码见底部github链接)。
+
 ## 实现
+
+### 通过控制台输入指令启动:获取控制台输入的命令
+
+首先是获取到控制台输入的命令，这里抽取出来做为一个工具函数。 格式为以"="隔开的键值对，键名以"-"开头，值为空时设置该值为true，变量之间用空格隔开。    
+
+```ts
+// util.ts
+/**
+ * 获取命令行的参数
+ * @param prefix 前缀
+ */
+export function getParams(prefix = "-"): { [k: string]: string | true } {
+    return process.argv.slice(2).reduce((obj, it) => {
+        const sp = it.split("=");
+        const key = sp[0].replace(prefix, "");
+        obj[key] = sp[1] || true;
+        return obj;
+    }, {} as ReturnType<typeof getParams>);
+}
+```
+
+运行结果
+![](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/20210215142034.png)
+
 ### 执行命令
+获取到命令行参数以后就好办了，接下来实现执行命令功能
+
 #### 执行单个命令
+
 首先我们先实现一个简单的执行命令代码，这要用到child_process模块里的exec函数。
 
 ```ts
 const util = require("util");
 const childProcess = require('child_process');
-const exec = util.promisify(childProcess.exec); // 这里把exec promise化
+const exec = util.promisify(childProcess.exec); // 这里把exec promisify
 ```
+
 然后把它封装一下
 
 ```ts
@@ -67,20 +103,51 @@ async function execute(cmd: string): Promise<string> {
     }
 }
 ```
+调用
+```ts
+const args = getParams();
+execute(args.command as string);
+```
+运行
+```ts
+const args = getParams();
+execute(args.command as string);
+```
+![](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/20210215161359.png)
+看结果可以发现：两条命令只执行了第一条，接下来就是改成顺序执行
 
+```ts
+async function mulExec(command: string[]) {
+   for (const cmd of command) {
+      await execute(cmd);
+   }
+}
+
+```
+运行
+```ts
+mulExec((args.command as string).split(","));
+```
+![](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/20210215161946.png)
 那么一个简单的执行命令函数就搞定了。运行一下
 
 ```ts
 execute("node -v");
 ```
+
 ![](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/20210214223223.png)
+
 #### 按顺序执行多个命令
+
 按顺序执行多个命令也很简单，只要await前面执行的命令就好了。
+
 ```ts
 await execute("node -v");
 execute("npm -v");
 ```
+
 ![](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/20210214225117.png)
+
 ### 遍历文件夹
 
 上面虽然能够执行命令，但是有时候需要编译的文件有很多，像stylus、pug这些可以直接编译整个文件夹的还好， 像ts的话就只能一个文件写一条命令，那也太麻烦了。所以得增加一个需求：遍历文件夹查找目标文件， 然后执行命令的代码。
@@ -131,7 +198,9 @@ async function forEachDir(
     }
 }
 ```
+
 然后正则验证文件名，如果符合就执行命令
+
 ```ts
 forEachDir("../test", [], (path, basename, isDir) => {
     if (isDir) return;
@@ -140,13 +209,16 @@ forEachDir("../test", [], (path, basename, isDir) => {
     return execute("stylus " + path);
 });
 ```
+
 ![](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/20210214223843.png)
 那么到这里，一个简单的命令批量执行工具代码就已经基本完成了。
 
 ## 工具化
+
 上面这些做为工具肯定是不够的，接下来就把它做成一个npm包，全局安装时就可以
 
 ## git地址
+
 https://github.com/mengxinssfd/cmd-que
 
 [TOC]

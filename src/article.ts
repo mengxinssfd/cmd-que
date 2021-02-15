@@ -1,28 +1,23 @@
+import {getParams, execute} from "./utils";
+
 const childProcess = require('child_process');
 const util = require("util");
 const exec = util.promisify(childProcess.exec);
 
+
 (async function () {
 
-    async function execute(cmd: string): Promise<string> {
-        console.log('执行"' + cmd + '"命令...');
-        try {
-            const {stdout} = await exec(cmd);
-            console.log('success!');
-            console.log(stdout); // 命令执行成功结果
-            return stdout;
-        } catch (e) {
-            console.log('执行失败');
-            console.log(e.stderr);
-            return e.stderr; // 命令执行error信息
+    const args = getParams();
+
+    async function mulExec(command: string[]) {
+        for (const cmd of command) {
+            await execute(cmd);
         }
     }
 
-    // execute("node -v");
+    mulExec((args.command as string).split(","));
 
-    await execute("node -v");
-    execute("npm -v");
-    return
+    return;
 
     const fs = require("fs");
     const Path = require("path");

@@ -371,13 +371,18 @@ function execute(cmd) {
     });
 }
 exports.execute = execute;
-function getParams() {
-    var params = {};
-    (process.argv.slice(2) || []).forEach(function (it) {
+/**
+ * 获取命令行的参数
+ * @param prefix 前缀
+ */
+function getParams(prefix) {
+    if (prefix === void 0) { prefix = "-"; }
+    return process.argv.slice(2).reduce(function (obj, it) {
         var sp = it.split("=");
-        params[sp[0].replace("-", "")] = sp[1] || true;
-    });
-    return params;
+        var key = sp[0].replace(prefix, "");
+        obj[key] = sp[1] || true;
+        return obj;
+    }, {});
 }
 exports.getParams = getParams;
 function isEmptyParams() {

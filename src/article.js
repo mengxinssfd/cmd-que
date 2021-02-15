@@ -1,3 +1,4 @@
+"use strict";
 var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
     if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
     return cooked;
@@ -38,32 +39,31 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+Object.defineProperty(exports, "__esModule", { value: true });
+var utils_1 = require("./utils");
 var childProcess = require('child_process');
 var util = require("util");
 var exec = util.promisify(childProcess.exec);
 (function () {
     return __awaiter(this, void 0, void 0, function () {
-        function execute(cmd) {
+        function mulExec(command) {
             return __awaiter(this, void 0, void 0, function () {
-                var stdout, e_1;
+                var _i, command_1, cmd;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
-                            console.log('执行"' + cmd + '"命令...');
+                            _i = 0, command_1 = command;
                             _a.label = 1;
                         case 1:
-                            _a.trys.push([1, 3, , 4]);
-                            return [4 /*yield*/, exec(cmd)];
+                            if (!(_i < command_1.length)) return [3 /*break*/, 4];
+                            cmd = command_1[_i];
+                            return [4 /*yield*/, utils_1.execute(cmd)];
                         case 2:
-                            stdout = (_a.sent()).stdout;
-                            console.log('success!');
-                            console.log(stdout); // 命令执行成功结果
-                            return [2 /*return*/, stdout];
+                            _a.sent();
+                            _a.label = 3;
                         case 3:
-                            e_1 = _a.sent();
-                            console.log('执行失败');
-                            console.log(e_1.stderr);
-                            return [2 /*return*/, e_1.stderr]; // 命令执行error信息
+                            _i++;
+                            return [3 /*break*/, 1];
                         case 4: return [2 /*return*/];
                     }
                 });
@@ -72,7 +72,7 @@ var exec = util.promisify(childProcess.exec);
         function forEachDir(path, exclude, cb) {
             if (exclude === void 0) { exclude = []; }
             return __awaiter(this, void 0, void 0, function () {
-                var stats, isDir, basename, isExclude, callback, isStop, dir, _i, dir_1, d, p, e_2;
+                var stats, isDir, basename, isExclude, callback, isStop, dir, _i, dir_1, d, p, e_1;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -83,7 +83,7 @@ var exec = util.promisify(childProcess.exec);
                             isDir = stats.isDirectory();
                             basename = Path.basename(path);
                             isExclude = function () {
-                                var raw = String.raw(__makeTemplateObject(["", ""], ["", ""]), path); // 路径必须raw，否则正则匹配不上
+                                var raw = String.raw(templateObject_1 || (templateObject_1 = __makeTemplateObject(["", ""], ["", ""])), path); // 路径必须raw，否则正则匹配不上
                                 return exclude.some(function (item) { return item.test(raw); }); // 判断该路径是否是忽略的
                             };
                             if (isDir && isExclude())
@@ -113,25 +113,19 @@ var exec = util.promisify(childProcess.exec);
                             return [3 /*break*/, 4];
                         case 7: return [3 /*break*/, 9];
                         case 8:
-                            e_2 = _a.sent();
-                            return [2 /*return*/, Promise.reject(e_2)];
+                            e_1 = _a.sent();
+                            return [2 /*return*/, Promise.reject(e_1)];
                         case 9: return [2 /*return*/];
                     }
                 });
             });
         }
-        var fs, Path;
+        var args, fs, Path;
         return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: 
-                // execute("node -v");
-                return [4 /*yield*/, execute("node -v")];
-                case 1:
-                    // execute("node -v");
-                    _a.sent();
-                    execute("npm -v");
-                    return [2 /*return*/];
-            }
+            args = utils_1.getParams();
+            mulExec(args.command.split(","));
+            return [2 /*return*/];
         });
     });
 })();
+var templateObject_1;

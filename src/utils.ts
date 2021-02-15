@@ -232,13 +232,17 @@ export async function execute(cmd: string): Promise<string> {
     }
 }
 
-export function getParams() {
-    const params: any = {};
-    (process.argv.slice(2) || []).forEach(it => {
+/**
+ * 获取命令行的参数
+ * @param prefix 前缀
+ */
+export function getParams(prefix = "-"): { [k: string]: string | true } {
+    return process.argv.slice(2).reduce((obj, it) => {
         const sp = it.split("=");
-        params[sp[0].replace("-", "")] = sp[1] || true;
-    });
-    return params;
+        const key = sp[0].replace(prefix, "");
+        obj[key] = sp[1] || true;
+        return obj;
+    }, {} as ReturnType<typeof getParams>);
 }
 
 export function isEmptyParams(): boolean {
