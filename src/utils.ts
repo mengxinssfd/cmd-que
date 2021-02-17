@@ -4,33 +4,6 @@ const childProcess = require('child_process');
 const util = require("util");
 const exec = util.promisify(childProcess.exec);
 
-// 获取数据类型
-export function typeOf(target: any): string {
-    const tp = typeof target;
-    if (tp !== 'object') return tp;
-    return Object.prototype.toString.call(target).slice(8, -1).toLowerCase();
-}
-
-
-/**
- * 防抖函数
- * @param callback 回调
- * @param delay 延时
- * @returns {Function}
- */
-export function debounce<CB extends (...args: any[]) => void>(callback: CB, delay: number): CB {
-    let timer: any = null;
-    return function (this: unknown, ...args: any[]) {
-        if (timer) {
-            clearTimeout(timer);
-            timer = null;
-        }
-        timer = setTimeout(() => {
-            timer = null;
-            callback.apply(this, args);
-        }, delay);
-    } as CB;
-}
 
 export function debouncePromise<T, CB extends (...args: any[]) => Promise<T>>(callback: CB, delay: number): CB {
     let timer: any = null;
@@ -51,21 +24,6 @@ export function debouncePromise<T, CB extends (...args: any[]) => Promise<T>>(ca
             }, delay);
         });
     } as CB;
-}
-
-/**
- * 防抖装饰器
- * @param delay
- * @constructor
- */
-export function Debounce(delay: number) {
-    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-        // 在babel的网站编译的是target包含key，descriptor
-        if (target.descriptor) {
-            descriptor = target.descriptor;
-        }
-        descriptor.value = debounce(descriptor.value, delay);
-    };
 }
 
 process.on('exit', function (code) {

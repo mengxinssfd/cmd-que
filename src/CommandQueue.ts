@@ -244,7 +244,7 @@ export class CommandQueue {
             -search-flag/-sf=       搜索文件或文件夹 /\\w+/flag
             -search-exclude/-se=    搜索文件或文件夹 忽略文件夹 多个用逗号(,)隔开
             -open/-o=               打开资源管理器并选中文件或文件夹
-            -open-type/-ot=               打开资源管理器并选中文件或文件夹
+            -open-type/-ot=         打开资源管理器并选中文件或文件夹
             -watch/-w               监听文件改变 与-config搭配使用
             -log                    遍历文件夹时是否显示遍历log
             -time/t                 显示执行代码所花费的时间

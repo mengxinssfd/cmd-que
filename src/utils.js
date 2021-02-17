@@ -40,45 +40,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.createEnumByObj = exports.isEmptyParams = exports.getParams = exports.execute = exports.findDirBFS = exports.findDir = exports.forEachDir = exports.Debounce = exports.debouncePromise = exports.debounce = exports.typeOf = void 0;
+exports.createEnumByObj = exports.isEmptyParams = exports.getParams = exports.execute = exports.findDirBFS = exports.findDir = exports.forEachDir = exports.debouncePromise = void 0;
 var fs = require('fs');
 var Path = require('path');
 var childProcess = require('child_process');
 var util = require("util");
 var exec = util.promisify(childProcess.exec);
-// 获取数据类型
-function typeOf(target) {
-    var tp = typeof target;
-    if (tp !== 'object')
-        return tp;
-    return Object.prototype.toString.call(target).slice(8, -1).toLowerCase();
-}
-exports.typeOf = typeOf;
-/**
- * 防抖函数
- * @param callback 回调
- * @param delay 延时
- * @returns {Function}
- */
-function debounce(callback, delay) {
-    var timer = null;
-    return function () {
-        var _this = this;
-        var args = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            args[_i] = arguments[_i];
-        }
-        if (timer) {
-            clearTimeout(timer);
-            timer = null;
-        }
-        timer = setTimeout(function () {
-            timer = null;
-            callback.apply(_this, args);
-        }, delay);
-    };
-}
-exports.debounce = debounce;
 function debouncePromise(callback, delay) {
     var timer = null;
     var rej;
@@ -113,21 +80,6 @@ function debouncePromise(callback, delay) {
     };
 }
 exports.debouncePromise = debouncePromise;
-/**
- * 防抖装饰器
- * @param delay
- * @constructor
- */
-function Debounce(delay) {
-    return function (target, propertyKey, descriptor) {
-        // 在babel的网站编译的是target包含key，descriptor
-        if (target.descriptor) {
-            descriptor = target.descriptor;
-        }
-        descriptor.value = debounce(descriptor.value, delay);
-    };
-}
-exports.Debounce = Debounce;
 process.on('exit', function (code) {
     // console.log(code);
 });
