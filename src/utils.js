@@ -39,7 +39,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 exports.createEnumByObj = exports.isEmptyParams = exports.getParams = exports.execute = exports.findDirBFS = exports.findDir = exports.forEachDir = exports.Debounce = exports.debouncePromise = exports.debounce = exports.typeOf = void 0;
 var fs = require('fs');
 var Path = require('path');
@@ -132,40 +132,6 @@ process.on('exit', function (code) {
     // console.log(code);
 });
 process.stdin.setEncoding('utf8');
-// 控制台输入
-function input(tips) {
-    process.stdout.write(tips);
-    return new Promise(function (res) {
-        process.stdin.on('data', function (input) {
-            res(input.toString().trim());
-            // if ([ 'NO', 'no'].indexOf(input) > -1) process.exit(0);
-        });
-    });
-}
-/**
- * 控制台循环输入，
- * @param tips
- * @param conditionFn 若返回false则一直输入
- * @returns {Promise<*>}
- */
-function inputLoop(tips, conditionFn) {
-    return __awaiter(this, void 0, void 0, function () {
-        var words;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, input(tips)];
-                case 1:
-                    words = _a.sent();
-                    _a.label = 2;
-                case 2: return [4 /*yield*/, conditionFn(words)];
-                case 3:
-                    if (!(_a.sent())) return [3 /*break*/, 0];
-                    _a.label = 4;
-                case 4: return [2 /*return*/, words];
-            }
-        });
-    });
-}
 /**
  * 遍历文件夹
  * @param path
@@ -181,11 +147,11 @@ function forEachDir(path, exclude, cb, showLog) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 8, , 9]);
                     showLog && console.log("遍历", path);
-                    return [4 /*yield*/, fs.statSync(path)];
+                    _a.label = 1;
                 case 1:
-                    stats = _a.sent();
+                    _a.trys.push([1, 7, , 8]);
+                    stats = fs.statSync(path);
                     isDir = stats.isDirectory();
                     basename = Path.basename(path);
                     isExclude = function () {
@@ -201,27 +167,26 @@ function forEachDir(path, exclude, cb, showLog) {
                     if (!isDir || isStop === true) {
                         return [2 /*return*/];
                     }
-                    return [4 /*yield*/, fs.readdirSync(path)];
-                case 3:
-                    dir = _a.sent();
+                    dir = fs.readdirSync(path);
                     _i = 0, dir_1 = dir;
-                    _a.label = 4;
-                case 4:
-                    if (!(_i < dir_1.length)) return [3 /*break*/, 7];
+                    _a.label = 3;
+                case 3:
+                    if (!(_i < dir_1.length)) return [3 /*break*/, 6];
                     d = dir_1[_i];
                     p = Path.resolve(path, d);
                     return [4 /*yield*/, forEachDir(p, exclude, cb, showLog)];
-                case 5:
+                case 4:
                     _a.sent();
-                    _a.label = 6;
-                case 6:
+                    _a.label = 5;
+                case 5:
                     _i++;
-                    return [3 /*break*/, 4];
-                case 7: return [3 /*break*/, 9];
-                case 8:
+                    return [3 /*break*/, 3];
+                case 6: return [3 /*break*/, 8];
+                case 7:
                     e_1 = _a.sent();
-                    return [2 /*return*/, Promise.reject(e_1)];
-                case 9: return [2 /*return*/];
+                    showLog && console.log("forEachDir error", path, e_1);
+                    return [3 /*break*/, 8];
+                case 8: return [2 /*return*/];
             }
         });
     });
@@ -240,9 +205,7 @@ function findDir(path, exclude, cb) {
                     if (v) {
                         return [2 /*return*/, path];
                     }
-                    return [4 /*yield*/, fs.statSync(path)];
-                case 2:
-                    stats = _a.sent();
+                    stats = fs.statSync(path);
                     isDir = stats.isDirectory();
                     if (!isDir) {
                         return [2 /*return*/, null];
@@ -253,24 +216,24 @@ function findDir(path, exclude, cb) {
                         return [2 /*return*/, null];
                     }
                     return [4 /*yield*/, fs.readdirSync(path)];
-                case 3:
+                case 2:
                     dir = _a.sent();
                     _i = 0, dir_2 = dir;
-                    _a.label = 4;
-                case 4:
-                    if (!(_i < dir_2.length)) return [3 /*break*/, 7];
+                    _a.label = 3;
+                case 3:
+                    if (!(_i < dir_2.length)) return [3 /*break*/, 6];
                     d = dir_2[_i];
                     p = Path.resolve(path, d);
                     return [4 /*yield*/, findDir(p, exclude, cb)];
-                case 5:
+                case 4:
                     rs = _a.sent();
                     if (rs)
                         return [2 /*return*/, rs];
-                    _a.label = 6;
-                case 6:
+                    _a.label = 5;
+                case 5:
                     _i++;
-                    return [3 /*break*/, 4];
-                case 7: return [2 /*return*/, null];
+                    return [3 /*break*/, 3];
+                case 6: return [2 /*return*/, null];
             }
         });
     });
@@ -296,9 +259,7 @@ function findDirBFS(path, exclude, cb) {
                                     if (v) {
                                         return [2 /*return*/, { value: p }];
                                     }
-                                    return [4 /*yield*/, fs.statSync(p)];
-                                case 2:
-                                    stats = _a.sent();
+                                    stats = fs.statSync(p);
                                     isDir = stats.isDirectory();
                                     if (!isDir)
                                         return [2 /*return*/, "continue"];
@@ -306,9 +267,7 @@ function findDirBFS(path, exclude, cb) {
                                     isExclude = exclude.some(function (item) { return item.test(raw); });
                                     if (isExclude)
                                         return [2 /*return*/, "continue"];
-                                    return [4 /*yield*/, fs.readdirSync(p)];
-                                case 3:
-                                    list = ((_a.sent()) || []).map(function (i) { return Path.resolve(p, i); });
+                                    list = (fs.readdirSync(p) || []).map(function (i) { return Path.resolve(p, i); });
                                     pathList.push.apply(pathList, list);
                                     return [2 /*return*/];
                             }
@@ -362,7 +321,7 @@ function execute(cmd) {
                     e_2 = _a.sent();
                     console.log('执行失败');
                     console.log('\n\n*******************************************');
-                    console.log(e_2.stderr);
+                    console.log(e_2);
                     console.log('*******************************************\n\n');
                     return [2 /*return*/, e_2.stderr];
                 case 4: return [2 /*return*/];
@@ -380,7 +339,7 @@ function getParams(prefix) {
     return process.argv.slice(2).reduce(function (obj, it) {
         var sp = it.split("=");
         var key = sp[0].replace(prefix, "");
-        obj[key] = sp[1] || true;
+        obj[key] = sp[1] || true; // "",undefined,"string";前两个会转为true
         return obj;
     }, {});
 }

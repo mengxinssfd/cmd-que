@@ -1,5 +1,5 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 exports.isRuleOn = void 0;
 function isRuleOn(rule) {
     return rule.on !== undefined;

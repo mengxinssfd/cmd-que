@@ -39,7 +39,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 exports.CommandQueue = void 0;
 var utils_1 = require("./utils");
 var configFileTypes_1 = require("./configFileTypes");
@@ -56,6 +56,8 @@ var Abb;
     Abb["help"] = "h";
     Abb["time"] = "t";
     Abb["command"] = "cmd";
+    Abb["open"] = "o";
+    Abb["open-type"] = "ot";
 })(Abb || (Abb = {}));
 var paramsAbb = utils_1.createEnumByObj(Abb);
 var CommandQueue = /** @class */ (function () {
@@ -65,7 +67,7 @@ var CommandQueue = /** @class */ (function () {
         this.params = utils_1.getParams();
         var time = this.getParamsValue(Abb.time);
         time && console.time("time");
-        this.init().finally(function () {
+        this.init()["finally"](function () {
             // watch模式下beforeEnd为第一次遍历完后的回调
             _this.config && _this.config.beforeEnd && _this.config.beforeEnd(_this.exec);
             time && console.timeEnd("time");
@@ -81,8 +83,14 @@ var CommandQueue = /** @class */ (function () {
                 if (this.getParamsValue(Abb.search)) {
                     return [2 /*return*/, this.search()];
                 }
+                if (this.getParamsValue(Abb.open)) {
+                    return [2 /*return*/, this.open()];
+                }
                 cmd = this.getParamsValue(Abb.command);
                 if (cmd) {
+                    if (cmd === true) {
+                        throw new TypeError();
+                    }
                     command = cmd.split(",");
                     return [2 /*return*/, this.mulExec(command)];
                 }
@@ -149,15 +157,18 @@ var CommandQueue = /** @class */ (function () {
         if (exclude === void 0) { exclude = []; }
         return utils_1.forEachDir(path, exclude, function (path, basename, isDir) {
             return cb(path, basename, isDir);
-        }, this.params.log);
+        }, Boolean(this.params.log)); // 有可能会输入-log=*
     };
     CommandQueue.prototype.search = function () {
-        var _a;
         var search = this.getParamsValue(Abb.search);
         var flag = this.getParamsValue(Abb["search-flag"]);
+        var se = this.getParamsValue(Abb["search-exclude"]);
+        if (search === true || search === undefined || flag === true || se === true) {
+            throw new TypeError();
+        }
         var reg = new RegExp(search, flag);
         console.log("search", reg);
-        var exclude = (_a = this.getParamsValue(Abb["search-exclude"])) === null || _a === void 0 ? void 0 : _a.split(",").filter(function (i) { return i; }).map(function (i) { return new RegExp(i); });
+        var exclude = se === null || se === void 0 ? void 0 : se.split(",").filter(function (i) { return i; }).map(function (i) { return new RegExp(i); });
         return this.foreach("./", exclude, function (path, basename) {
             if (reg.test(basename))
                 console.log("result ", path);
@@ -174,7 +185,7 @@ var CommandQueue = /** @class */ (function () {
             "\\$FileNameWithoutAllExtensions\\$": basename.split(".")[0],
             "\\$FileDir\\$": Path.dirname(path),
             "\\$Cwd\\$": cwd,
-            "\\$SourceFileDir\\$": __dirname,
+            "\\$SourceFileDir\\$": __dirname
         };
         var mapKeys = Object.keys(map);
         command = mapKeys.reduce(function (c, k) { return c.replace(new RegExp(k, "g"), map[k]); }, String.raw(templateObject_1 || (templateObject_1 = __makeTemplateObject(["", ""], ["", ""])), command));
@@ -331,7 +342,46 @@ var CommandQueue = /** @class */ (function () {
         });
     };
     CommandQueue.showHelp = function () {
-        console.log("\n            -config/-c=             \u914D\u7F6E\u7684\u8DEF\u5F84\n            -help/-h                \u5E2E\u52A9\n            -search/-s=             \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939\n            -search-flag/-sf=       \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 /\\w+/flag\n            -search-exclude/-se=    \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 \u5FFD\u7565\u6587\u4EF6\u5939 \u591A\u4E2A\u7528\u9017\u53F7(,)\u9694\u5F00\n            -watch/-w               \u76D1\u542C\u6587\u4EF6\u6539\u53D8 \u4E0E-config\u642D\u914D\u4F7F\u7528\n            -log                    \u904D\u5386\u6587\u4EF6\u5939\u65F6\u662F\u5426\u663E\u793A\u904D\u5386log\n            -time/t                 \u663E\u793A\u6267\u884C\u4EE3\u7801\u6240\u82B1\u8D39\u7684\u65F6\u95F4\n            -command/-cmd=          \u901A\u8FC7\u547D\u4EE4\u884C\u6267\u884C\u547D\u4EE4 \u591A\u4E2A\u5219\u7528\u9017\u53F7(,)\u9694\u5F00 \u5FC5\u987B\u8981\u7528\u5F15\u53F7\u5F15\u8D77\u6765\n        ");
+        console.log("\n            -config/-c=             \u914D\u7F6E\u7684\u8DEF\u5F84\n            -help/-h                \u5E2E\u52A9\n            -search/-s=             \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939\n            -search-flag/-sf=       \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 /\\w+/flag\n            -search-exclude/-se=    \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 \u5FFD\u7565\u6587\u4EF6\u5939 \u591A\u4E2A\u7528\u9017\u53F7(,)\u9694\u5F00\n            -open/-o=               \u6253\u5F00\u8D44\u6E90\u7BA1\u7406\u5668\u5E76\u9009\u4E2D\u6587\u4EF6\u6216\u6587\u4EF6\u5939\n            -open-type/-ot=               \u6253\u5F00\u8D44\u6E90\u7BA1\u7406\u5668\u5E76\u9009\u4E2D\u6587\u4EF6\u6216\u6587\u4EF6\u5939\n            -watch/-w               \u76D1\u542C\u6587\u4EF6\u6539\u53D8 \u4E0E-config\u642D\u914D\u4F7F\u7528\n            -log                    \u904D\u5386\u6587\u4EF6\u5939\u65F6\u662F\u5426\u663E\u793A\u904D\u5386log\n            -time/t                 \u663E\u793A\u6267\u884C\u4EE3\u7801\u6240\u82B1\u8D39\u7684\u65F6\u95F4\n            -command/-cmd=          \u901A\u8FC7\u547D\u4EE4\u884C\u6267\u884C\u547D\u4EE4 \u591A\u4E2A\u5219\u7528\u9017\u53F7(,)\u9694\u5F00 \u5FC5\u987B\u8981\u7528\u5F15\u53F7\u5F15\u8D77\u6765\n        ");
+    };
+    // 好处：普通的命令不能打开./
+    CommandQueue.prototype.open = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var OpenTypes, open, path, stat, isDir, ot, type, spawnSync, match, exec;
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        (function (OpenTypes) {
+                            OpenTypes["select"] = "select";
+                            OpenTypes["cmd"] = "cmd";
+                            OpenTypes["run"] = "run";
+                        })(OpenTypes || (OpenTypes = {}));
+                        open = this.getParamsValue(Abb.open);
+                        path = Path.resolve(process.cwd(), open === true ? "./" : open);
+                        return [4 /*yield*/, require("fs").statSync(path)];
+                    case 1:
+                        stat = _b.sent();
+                        isDir = stat.isDirectory();
+                        ot = this.getParamsValue(Abb["open-type"]);
+                        type = !ot || ot === true ? OpenTypes.select : ot;
+                        spawnSync = require('child_process').spawnSync;
+                        match = (_a = {},
+                            // 运行一次就会打开一个资源管理器，不能只打开一个相同的
+                            _a[OpenTypes.select] = ["explorer", ["/select,\"" + path + "\""]],
+                            _a[OpenTypes.run] = ['start', [path]],
+                            _a[OpenTypes.cmd] = ["start", ["cmd", "/k", "\"cd " + (isDir ? path : Path.dirname(path)) + "\""]],
+                            _a);
+                        exec = function (_a) {
+                            var command = _a[0], path = _a[1];
+                            return spawnSync(command, path, { shell: true });
+                        };
+                        console.log(path);
+                        exec(match[type] || match[OpenTypes.select]);
+                        return [2 /*return*/];
+                }
+            });
+        });
     };
     return CommandQueue;
 }());

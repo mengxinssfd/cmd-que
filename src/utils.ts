@@ -73,34 +73,6 @@ process.on('exit', function (code) {
 });
 process.stdin.setEncoding('utf8');
 
-// 控制台输入
-function input(tips: string): Promise<string> {
-    process.stdout.write(tips);
-    return new Promise((res) => {
-        process.stdin.on('data', (input: Buffer) => {
-            res(input.toString().trim());
-            // if ([ 'NO', 'no'].indexOf(input) > -1) process.exit(0);
-        });
-    });
-}
-
-/**
- * 控制台循环输入，
- * @param tips
- * @param conditionFn 若返回false则一直输入
- * @returns {Promise<*>}
- */
-async function inputLoop(
-    tips: string,
-    conditionFn: (words: string) => boolean | Promise<boolean>,
-): Promise<string> {
-    let words;
-    do {
-        words = await input(tips);
-    } while (!await conditionFn(words));
-    return words;
-}
-
 
 /**
  * 遍历文件夹
@@ -113,11 +85,11 @@ export async function forEachDir(
     path: string,
     exclude: RegExp[] = [],
     cb?: (path: string, basename: string, isDir: boolean) => true | void | Promise<true | void>,
-    showLog = false
+    showLog = false,
 ) {
+    showLog && console.log("遍历", path);
     try {
-        showLog && console.log("遍历", path);
-        const stats = await fs.statSync(path);
+        const stats = fs.statSync(path);
         const isDir = stats.isDirectory();
         const basename = Path.basename(path);
 
@@ -135,13 +107,15 @@ export async function forEachDir(
             return;
         }
 
-        const dir = await fs.readdirSync(path);
+        const dir = fs.readdirSync(path);
         for (const d of dir) {
             const p = Path.resolve(path, d);
             await forEachDir(p, exclude, cb, showLog);
         }
     } catch (e) {
-        return Promise.reject(e);
+        showLog && console.log("forEachDir error", path, e);
+        // 不能抛出异常，否则遍历到System Volume Information文件夹报错会中断遍历
+        // return Promise.reject(e);
     }
 }
 
@@ -152,7 +126,7 @@ export async function findDir(path: string, exclude: RegExp[], cb: (path: string
         return path;
     }
 
-    const stats = await fs.statSync(path);
+    const stats = fs.statSync(path);
     const isDir = stats.isDirectory();
     if (!isDir) {
         return null;
@@ -184,7 +158,7 @@ export async function findDirBFS(path: string, exclude: RegExp[], cb: (path: str
             return p;
         }
 
-        const stats = await fs.statSync(p);
+        const stats = fs.statSync(p);
         const isDir = stats.isDirectory();
         if (!isDir) continue;
 
@@ -192,7 +166,7 @@ export async function findDirBFS(path: string, exclude: RegExp[], cb: (path: str
         const isExclude = exclude.some((item) => item.test(raw));
         if (isExclude) continue;
 
-        const list = ((await fs.readdirSync(p) as string[]) || []).map(i => Path.resolve(p, i));
+        const list = ((fs.readdirSync(p) as string[]) || []).map(i => Path.resolve(p, i));
         pathList.push(...list);
 
     }
@@ -226,7 +200,7 @@ export async function execute(cmd: string): Promise<string> {
     } catch (e) {
         console.log('执行失败');
         console.log('\n\n*******************************************');
-        console.log(e.stderr);
+        console.log(e);
         console.log('*******************************************\n\n');
         return e.stderr;
     }
@@ -240,7 +214,7 @@ export function getParams(prefix = "-"): { [k: string]: string | true } {
     return process.argv.slice(2).reduce((obj, it) => {
         const sp = it.split("=");
         const key = sp[0].replace(prefix, "");
-        obj[key] = sp[1] || true;
+        obj[key] = sp[1] || true; // "",undefined,"string";前两个会转为true
         return obj;
     }, {} as ReturnType<typeof getParams>);
 }

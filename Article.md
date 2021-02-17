@@ -74,11 +74,9 @@ export function getParams(prefix = "-"): { [k: string]: string | true } {
 ![](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/20210215142034.png)
 
 ### 执行命令
-获取到命令行参数以后就好办了，接下来实现执行命令功能
+获取到命令行参数以后就好办了，接下来实现执行命令功能。
 
-#### 执行单个命令
-
-首先我们先实现一个简单的执行命令代码，这要用到child_process模块里的exec函数。
+先实现一个简单的执行命令代码，这要用到child_process模块里的exec函数。
 
 ```ts
 const util = require("util");
@@ -114,7 +112,7 @@ const args = getParams();
 execute(args.command as string);
 ```
 ![](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/20210215161359.png)
-看结果可以发现：两条命令只执行了第一条，接下来就是改成顺序执行
+看结果可以发现：两条命令只执行了第一条，把它改成顺序执行
 
 ```ts
 async function mulExec(command: string[]) {
@@ -129,28 +127,11 @@ async function mulExec(command: string[]) {
 mulExec((args.command as string).split(","));
 ```
 ![](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/20210215161946.png)
-那么一个简单的执行命令函数就搞定了。运行一下
 
-```ts
-execute("node -v");
-```
-
-![](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/20210214223223.png)
-
-#### 按顺序执行多个命令
-
-按顺序执行多个命令也很简单，只要await前面执行的命令就好了。
-
-```ts
-await execute("node -v");
-execute("npm -v");
-```
-
-![](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/20210214225117.png)
 
 ### 遍历文件夹
 
-上面虽然能够执行命令，但是有时候需要编译的文件有很多，像stylus、pug这些可以直接编译整个文件夹的还好， 像ts的话就只能一个文件写一条命令，那也太麻烦了。所以得增加一个需求：遍历文件夹查找目标文件， 然后执行命令的代码。
+上面虽然能够执行命令，但是有时候需要编译的文件有很多，像stylus、pug这些可以直接编译整个文件夹的还好， 像ts的话就只能一个文件写一条命令，那也太麻烦了。所以得增加一个需求：遍历文件夹查找目标文件， 然后执行命令的功能。
 
 首先写一个遍历文件夹的函数。
 
@@ -211,7 +192,11 @@ forEachDir("../test", [], (path, basename, isDir) => {
 ```
 
 ![](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/20210214223843.png)
-那么到这里，一个简单的命令批量执行工具代码就已经基本完成了。
+
+
+## 进阶
+
+那么到这里，一个简单的命令批量执行工具代码就已经基本完成了。但是需求总是会变的，
 
 ## 工具化
 
