@@ -40,7 +40,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.createEnumByObj = exports.isEmptyParams = exports.getParams = exports.execute = exports.findDirBFS = exports.findDir = exports.forEachDir = exports.debouncePromise = void 0;
+exports.createEnumByObj = exports.isEmptyParams = exports.getParams = exports.mulExec = exports.executeTemplate = exports.execute = exports.findDirBFS = exports.findDir = exports.forEachDir = exports.debouncePromise = void 0;
 var fs = require('fs');
 var Path = require('path');
 var childProcess = require('child_process');
@@ -253,35 +253,67 @@ function getTime() {
 }
 function execute(cmd) {
     return __awaiter(this, void 0, void 0, function () {
-        var stdout, e_2;
+        var stdout;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     console.log(getTime(), '执行"' + cmd + '"命令...');
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 3, , 4]);
                     return [4 /*yield*/, exec(cmd)];
-                case 2:
+                case 1:
                     stdout = (_a.sent()).stdout;
                     console.log('success!');
                     // console.log('\n\n*************************命令输出start*************************');
                     console.log(stdout);
                     // console.log('*************************命令输出end*******************\n\n');
                     return [2 /*return*/, stdout];
-                case 3:
-                    e_2 = _a.sent();
-                    console.log('执行失败');
-                    console.log('\n\n*******************************************');
-                    console.log(e_2);
-                    console.log('*******************************************\n\n');
-                    return [2 /*return*/, e_2.stderr];
-                case 4: return [2 /*return*/];
             }
         });
     });
 }
 exports.execute = execute;
+function executeTemplate(command, path) {
+    if (path === void 0) { path = ""; }
+    var cwd = process.cwd();
+    path = path || cwd;
+    var basename = Path.basename(path);
+    var map = {
+        "\\$FilePath\\$": path,
+        "\\$FileName\\$": basename,
+        "\\$FileNameWithoutExtension\\$": basename.split(".").slice(0, -1).join("."),
+        "\\$FileNameWithoutAllExtensions\\$": basename.split(".")[0],
+        "\\$FileDir\\$": Path.dirname(path),
+        "\\$Cwd\\$": cwd,
+        "\\$SourceFileDir\\$": __dirname
+    };
+    var mapKeys = Object.keys(map);
+    command = mapKeys.reduce(function (c, k) { return c.replace(new RegExp(k, "g"), map[k]); }, String.raw(templateObject_4 || (templateObject_4 = __makeTemplateObject(["", ""], ["", ""])), command));
+    return execute(command);
+}
+exports.executeTemplate = executeTemplate;
+function mulExec(command, path) {
+    return __awaiter(this, void 0, void 0, function () {
+        var _i, command_1, cmd;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _i = 0, command_1 = command;
+                    _a.label = 1;
+                case 1:
+                    if (!(_i < command_1.length)) return [3 /*break*/, 4];
+                    cmd = command_1[_i];
+                    return [4 /*yield*/, executeTemplate(cmd, path)];
+                case 2:
+                    _a.sent();
+                    _a.label = 3;
+                case 3:
+                    _i++;
+                    return [3 /*break*/, 1];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.mulExec = mulExec;
 /**
  * 获取命令行的参数
  * @param prefix 前缀
@@ -311,4 +343,4 @@ function createEnumByObj(obj) {
     return res;
 }
 exports.createEnumByObj = createEnumByObj;
-var templateObject_1, templateObject_2, templateObject_3;
+var templateObject_1, templateObject_2, templateObject_3, templateObject_4;

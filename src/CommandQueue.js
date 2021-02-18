@@ -1,8 +1,4 @@
 "use strict";
-var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
-    if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
-    return cooked;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -63,59 +59,69 @@ var paramsAbb = utils_1.createEnumByObj(Abb);
 var CommandQueue = /** @class */ (function () {
     function CommandQueue() {
         var _this = this;
-        this.watchArr = [];
+        this.watchedList = [];
         this.params = utils_1.getParams();
         var time = this.getParamsValue(Abb.time);
         time && console.time("time");
         this.init()["finally"](function () {
             // watch模式下beforeEnd为第一次遍历完后的回调
-            _this.config && _this.config.beforeEnd && _this.config.beforeEnd(_this.exec);
+            _this.config && _this.config.beforeEnd && _this.config.beforeEnd(utils_1.executeTemplate);
             time && console.timeEnd("time");
         });
     }
     CommandQueue.prototype.init = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var cmd, command, cp, configPath;
+            var cmd, command, cp, configPath, e_1;
             return __generator(this, function (_a) {
-                if (utils_1.isEmptyParams() || this.getParamsValue(Abb.help)) {
-                    return [2 /*return*/, CommandQueue.showHelp()];
+                switch (_a.label) {
+                    case 0:
+                        if (utils_1.isEmptyParams() || this.getParamsValue(Abb.help)) {
+                            return [2 /*return*/, CommandQueue.showHelp()];
+                        }
+                        if (this.getParamsValue(Abb.search)) {
+                            return [2 /*return*/, this.search()];
+                        }
+                        if (this.getParamsValue(Abb.open)) {
+                            return [2 /*return*/, this.open()];
+                        }
+                        cmd = this.getParamsValue(Abb.command);
+                        if (cmd) {
+                            if (cmd === true) {
+                                throw new TypeError();
+                            }
+                            command = cmd.split(",");
+                            return [2 /*return*/, utils_1.mulExec(command)];
+                        }
+                        cp = this.getParamsValue(Abb.config);
+                        configPath = Path.resolve(process.cwd(), cp);
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 4, , 5]);
+                        this.config = require(configPath);
+                        if (!this.config.beforeStart) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.config.beforeStart(utils_1.executeTemplate)];
+                    case 2:
+                        _a.sent();
+                        _a.label = 3;
+                    case 3: return [3 /*break*/, 5];
+                    case 4:
+                        e_1 = _a.sent();
+                        console.error("加载配置文件出错", process.cwd(), configPath);
+                        return [2 /*return*/];
+                    case 5:
+                        if (this.getParamsValue(Abb.watch)) {
+                            return [2 /*return*/, this.watch()];
+                        }
+                        else {
+                            if (this.config.rules) {
+                                return [2 /*return*/, this.testRules()];
+                            }
+                            else {
+                                return [2 /*return*/, utils_1.mulExec(this.config.command)];
+                            }
+                        }
+                        return [2 /*return*/];
                 }
-                if (this.getParamsValue(Abb.search)) {
-                    return [2 /*return*/, this.search()];
-                }
-                if (this.getParamsValue(Abb.open)) {
-                    return [2 /*return*/, this.open()];
-                }
-                cmd = this.getParamsValue(Abb.command);
-                if (cmd) {
-                    if (cmd === true) {
-                        throw new TypeError();
-                    }
-                    command = cmd.split(",");
-                    return [2 /*return*/, this.mulExec(command)];
-                }
-                cp = this.getParamsValue(Abb.config);
-                configPath = Path.resolve(process.cwd(), cp);
-                try {
-                    this.config = require(configPath);
-                }
-                catch (e) {
-                    console.error("加载配置文件出错", process.cwd(), configPath);
-                    return [2 /*return*/];
-                }
-                this.config.beforeStart && this.config.beforeStart(this.exec);
-                if (this.getParamsValue(Abb.watch)) {
-                    return [2 /*return*/, this.watch()];
-                }
-                else {
-                    if (this.config.rules) {
-                        return [2 /*return*/, this.testRules()];
-                    }
-                    else {
-                        return [2 /*return*/, this.mulExec(this.config.command)];
-                    }
-                }
-                return [2 /*return*/];
             });
         });
     };
@@ -174,73 +180,30 @@ var CommandQueue = /** @class */ (function () {
                 console.log("result ", path);
         });
     };
-    CommandQueue.prototype.exec = function (command, path) {
-        if (path === void 0) { path = ""; }
-        var cwd = process.cwd();
-        path = path || cwd;
-        var basename = Path.basename(path);
-        var map = {
-            "\\$FilePath\\$": path,
-            "\\$FileNameWithoutExtension\\$": basename.split(".").slice(0, -1).join("."),
-            "\\$FileNameWithoutAllExtensions\\$": basename.split(".")[0],
-            "\\$FileDir\\$": Path.dirname(path),
-            "\\$Cwd\\$": cwd,
-            "\\$SourceFileDir\\$": __dirname
-        };
-        var mapKeys = Object.keys(map);
-        command = mapKeys.reduce(function (c, k) { return c.replace(new RegExp(k, "g"), map[k]); }, String.raw(templateObject_1 || (templateObject_1 = __makeTemplateObject(["", ""], ["", ""])), command));
-        return utils_1.execute(command);
-    };
-    ;
-    CommandQueue.prototype.mulExec = function (command, path) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _i, command_1, cmd;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _i = 0, command_1 = command;
-                        _a.label = 1;
-                    case 1:
-                        if (!(_i < command_1.length)) return [3 /*break*/, 4];
-                        cmd = command_1[_i];
-                        return [4 /*yield*/, this.exec(cmd, path)];
-                    case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3:
-                        _i++;
-                        return [3 /*break*/, 1];
-                    case 4: return [2 /*return*/];
-                }
-            });
-        });
-    };
     CommandQueue.prototype.test = function (eventName, path, basename) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var rules, _i, rules_1, rule;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        rules = this.config.rules;
-                        if (!rules)
-                            return [2 /*return*/];
+                        rules = (_a = this.config.rules) !== null && _a !== void 0 ? _a : [];
                         _i = 0, rules_1 = rules;
-                        _a.label = 1;
+                        _b.label = 1;
                     case 1:
                         if (!(_i < rules_1.length)) return [3 /*break*/, 6];
                         rule = rules_1[_i];
                         if (!rule.test.test(basename))
                             return [3 /*break*/, 5];
                         if (!configFileTypes_1.isRuleOn(rule)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, rule.on(eventName, path, Path.extname(path).substr(1), function (cmd) { return _this.exec(cmd, path); })];
+                        return [4 /*yield*/, rule.on(eventName, path, Path.extname(path).substr(1), function (cmd) { return utils_1.executeTemplate(cmd, path); })];
                     case 2:
-                        _a.sent();
+                        _b.sent();
                         return [3 /*break*/, 5];
-                    case 3: return [4 /*yield*/, this.mulExec(rule.command, path)];
+                    case 3: return [4 /*yield*/, utils_1.mulExec(rule.command, path)];
                     case 4:
-                        _a.sent();
-                        _a.label = 5;
+                        _b.sent();
+                        _b.label = 5;
                     case 5:
                         _i++;
                         return [3 /*break*/, 1];
@@ -251,30 +214,29 @@ var CommandQueue = /** @class */ (function () {
     };
     CommandQueue.prototype.watch = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var config, watchArr, FS, watch, include, includes, _i, includes_2, path;
+            var config, watchedList, FS, watch, include, includes, _i, includes_2, path;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         config = this.config;
-                        watchArr = this.watchArr;
+                        watchedList = this.watchedList;
                         if (!config.rules)
                             throw new TypeError("rules required");
                         // 编辑器修改保存时会触发多次change事件
                         config.rules.forEach(function (item) {
                             // 可能会有机器会慢一点 如果有再把间隔调大一点
                             item.on = utils_1.debouncePromise(configFileTypes_1.isRuleOn(item) ? item.on : function (e, p) {
-                                return _this.mulExec(item.command, p);
+                                return utils_1.mulExec(item.command, p);
                             }, 1);
                         });
                         FS = require("fs");
                         watch = function (path) {
-                            if (watchArr.indexOf(path) > -1)
+                            if (watchedList.indexOf(path) > -1)
                                 return;
-                            watchArr.push(path);
                             console.log("对" + path + "文件夹添加监听\n");
                             var watchCB = function (eventType, filename) { return __awaiter(_this, void 0, void 0, function () {
-                                var filePath, exist, index, stat, e_1;
+                                var filePath, exist, index, stat, e_2;
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
                                         case 0:
@@ -284,37 +246,34 @@ var CommandQueue = /** @class */ (function () {
                                             this.params.log && console.log(eventType, filePath);
                                             _a.label = 1;
                                         case 1:
-                                            _a.trys.push([1, 5, , 6]);
-                                            return [4 /*yield*/, FS.existsSync(filePath)];
-                                        case 2:
-                                            exist = _a.sent();
+                                            _a.trys.push([1, 3, , 4]);
+                                            exist = FS.existsSync(filePath);
                                             return [4 /*yield*/, this.test(exist ? eventType : "delete", filePath, filename)];
-                                        case 3:
+                                        case 2:
                                             _a.sent();
                                             if (!exist) {
                                                 this.params.log && console.log(filePath, "已删除!");
-                                                index = watchArr.indexOf(filePath);
+                                                index = watchedList.indexOf(filePath);
                                                 if (index > -1) {
-                                                    watchArr.splice(index, 1);
+                                                    watchedList.splice(index, 1);
                                                 }
                                                 return [2 /*return*/];
                                             }
-                                            return [4 /*yield*/, FS.statSync(filePath)];
-                                        case 4:
-                                            stat = _a.sent();
+                                            stat = FS.statSync(filePath);
                                             if (stat.isDirectory()) {
                                                 this.foreach(filePath, config.exclude, watch);
                                             }
-                                            return [3 /*break*/, 6];
-                                        case 5:
-                                            e_1 = _a.sent();
-                                            this.params.log && console.log("watch try catch", e_1, filePath);
-                                            return [3 /*break*/, 6];
-                                        case 6: return [2 /*return*/];
+                                            return [3 /*break*/, 4];
+                                        case 3:
+                                            e_2 = _a.sent();
+                                            this.params.log && console.log("watch try catch", e_2, filePath);
+                                            return [3 /*break*/, 4];
+                                        case 4: return [2 /*return*/];
                                     }
                                 });
                             }); };
                             var watcher = FS.watch(path, null, watchCB);
+                            watchedList.push(path); // 记录到已watch列表中
                             watcher.addListener("error", function (e) {
                                 console.log("addListener error", e);
                             });
@@ -346,44 +305,33 @@ var CommandQueue = /** @class */ (function () {
     };
     // 好处：普通的命令不能打开./
     CommandQueue.prototype.open = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var OpenTypes, open, path, stat, isDir, ot, type, spawnSync, match, exec;
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        (function (OpenTypes) {
-                            OpenTypes["select"] = "select";
-                            OpenTypes["cmd"] = "cmd";
-                            OpenTypes["run"] = "run";
-                        })(OpenTypes || (OpenTypes = {}));
-                        open = this.getParamsValue(Abb.open);
-                        path = Path.resolve(process.cwd(), open === true ? "./" : open);
-                        return [4 /*yield*/, require("fs").statSync(path)];
-                    case 1:
-                        stat = _b.sent();
-                        isDir = stat.isDirectory();
-                        ot = this.getParamsValue(Abb["open-type"]);
-                        type = !ot || ot === true ? OpenTypes.select : ot;
-                        spawnSync = require('child_process').spawnSync;
-                        match = (_a = {},
-                            // 运行一次就会打开一个资源管理器，不能只打开一个相同的
-                            _a[OpenTypes.select] = ["explorer", ["/select,\"" + path + "\""]],
-                            _a[OpenTypes.run] = ['start', [path]],
-                            _a[OpenTypes.cmd] = ["start", ["cmd", "/k", "\"cd " + (isDir ? path : Path.dirname(path)) + "\""]],
-                            _a);
-                        exec = function (_a) {
-                            var command = _a[0], path = _a[1];
-                            return spawnSync(command, path, { shell: true });
-                        };
-                        console.log(path);
-                        exec(match[type] || match[OpenTypes.select]);
-                        return [2 /*return*/];
-                }
-            });
-        });
+        var _a;
+        var OpenTypes;
+        (function (OpenTypes) {
+            OpenTypes["select"] = "select";
+            OpenTypes["cmd"] = "cmd";
+            OpenTypes["run"] = "run";
+        })(OpenTypes || (OpenTypes = {}));
+        var open = this.getParamsValue(Abb.open);
+        var path = Path.resolve(process.cwd(), open === true ? "./" : open);
+        var stat = require("fs").statSync(path);
+        var isDir = stat.isDirectory();
+        var ot = this.getParamsValue(Abb["open-type"]);
+        var type = !ot || ot === true ? OpenTypes.select : ot;
+        var spawnSync = require('child_process').spawnSync;
+        var match = (_a = {},
+            // 运行一次就会打开一个资源管理器，不能只打开一个相同的
+            _a[OpenTypes.select] = ["explorer", ["/select,\"" + path + "\""]],
+            _a[OpenTypes.run] = ['start', [path]],
+            _a[OpenTypes.cmd] = ["start", ["cmd", "/k", "\"cd " + (isDir ? path : Path.dirname(path)) + "\""]],
+            _a);
+        var exec = function (_a) {
+            var command = _a[0], path = _a[1];
+            return spawnSync(command, path, { shell: true });
+        };
+        console.log(path);
+        exec(match[type] || match[OpenTypes.select]);
     };
     return CommandQueue;
 }());
 exports.CommandQueue = CommandQueue;
-var templateObject_1;

@@ -42,7 +42,7 @@ process.stdin.setEncoding('utf8');
 export async function forEachDir(
     path: string,
     exclude: RegExp[] = [],
-    cb?: (path: string, basename: string, isDir: boolean) => true | void | Promise<true | void>,
+    cb?: (path: string, basename: string, isDir: boolean) => true | void | Promise<true | unknown>,
     showLog = false,
 ) {
     showLog && console.log("遍历", path);
@@ -55,8 +55,8 @@ export async function forEachDir(
             const raw = String.raw`${path}`;
             return exclude.some((item) => item.test(raw));
         };
-        if (isDir && isExclude()) return;
 
+        if (isDir && isExclude()) return;
 
         const callback = cb || ((path, isDir) => undefined);
         const isStop = await callback(path, basename, isDir);
@@ -148,19 +148,44 @@ function getTime(): string {
 
 export async function execute(cmd: string): Promise<string> {
     console.log(getTime(), '执行"' + cmd + '"命令...');
-    try {
-        const {stdout} = await exec(cmd);
-        console.log('success!');
-        // console.log('\n\n*************************命令输出start*************************');
-        console.log(stdout);
-        // console.log('*************************命令输出end*******************\n\n');
-        return stdout;
-    } catch (e) {
+    // try {
+    const {stdout} = await exec(cmd);
+    console.log('success!');
+    // console.log('\n\n*************************命令输出start*************************');
+    console.log(stdout);
+    // console.log('*************************命令输出end*******************\n\n');
+    return stdout;
+    /*} catch (e) {
         console.log('执行失败');
         console.log('\n\n*******************************************');
         console.log(e);
         console.log('*******************************************\n\n');
-        return e.stderr;
+        process.exit(0);
+    }*/
+}
+
+export function executeTemplate(command: string, path = "") {
+    const cwd = process.cwd();
+    path = path || cwd;
+    const basename = Path.basename(path);
+
+    const map: { [k: string]: string } = {
+        "\\$FilePath\\$": path, // 文件完整路径
+        "\\$FileName\\$": basename, // 文件名
+        "\\$FileNameWithoutExtension\\$": basename.split(".").slice(0, -1).join("."), // 不含文件后缀的路径
+        "\\$FileNameWithoutAllExtensions\\$": basename.split(".")[0], // 不含任何文件后缀的路径
+        "\\$FileDir\\$": Path.dirname(path), // 不含文件名的路径
+        "\\$Cwd\\$": cwd, // 启动命令所在路径
+        "\\$SourceFileDir\\$": __dirname, // 代码所在路径
+    };
+    const mapKeys = Object.keys(map);
+    command = mapKeys.reduce((c, k) => c.replace(new RegExp(k, "g"), map[k]), String.raw`${command}`);
+    return execute(command);
+}
+
+export async function mulExec(command: string[], path?: string) {
+    for (const cmd of command) {
+        await executeTemplate(cmd, path);
     }
 }
 

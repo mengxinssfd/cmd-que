@@ -1,7 +1,7 @@
 type execFn = (command: string) => Promise<string>;
 
 /**
- * @param eventName 事件名
+ * @param eventName watch模式下触发的事件名
  * @param path 触发改动事件的路径
  * @param ext 触发改动事件的文件后缀
  * @param exec 执行命令函数
@@ -17,11 +17,11 @@ type Rule = {
 
 export type RuleOn = Omit<Rule, "command">;
 type RuleCmd = Omit<Rule, "on">;
-type Rules = Array<RuleOn | RuleCmd>;
+export type Rules = Array<RuleOn | RuleCmd>;
 
 export interface Config {
-    beforeStart: (exec: execFn) => void;
-    beforeEnd: (exec: execFn) => void;
+    beforeStart: (exec: execFn) => Promise<unknown> | unknown;
+    beforeEnd: (exec: execFn) => Promise<unknown> | unknown;
 }
 
 export interface ExecCmdConfig extends Config {

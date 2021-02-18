@@ -1,6 +1,6 @@
 module.exports = {
     beforeEnd(exec) {
-        return exec("pug $Cwd$")
+        return exec("pug $Cwd$");
     },
     exclude: [
         /node_modules/,
@@ -14,9 +14,10 @@ module.exports = {
         {
             test: /\.styl$/,
             on: async (eventName, path, ext, exec) => {
+                console.log("ssssssss")
                 if (eventName === "delete") return;
                 const result = await exec("stylus $FilePath$");
-                console.log(result)
+                console.log("on", result);
             }
         },
         {
