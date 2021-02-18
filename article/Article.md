@@ -955,6 +955,37 @@ exec(match[type as OpenTypes] || match[OpenTypes.select]);
 
 接下来就把它发布到npm上，到时候全局安装后就可以在任意路径上运行了
 
+发布
+
+![image-20210218183303593](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/image-20210218183303593.png)
+
+安装
+
+> npm i -g  @mxssfd/cmd-que
+
+测试
+
+![image-20210218183513841](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/image-20210218183513841.png)
+
+## 配合webstorm file watcher自动编译less并postcss编译
+
+1. 首先安装cmd-que
+
+2. 开启file watcher
+   ![image-20210218190355179](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/image-20210218190355179.png)
+   ![image-20210218190434007](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/image-20210218190434007.png)
+   
+3. 新建less文件
+   ![image-20210218190611877](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/image-20210218190611877.png)
+   
+4. 修改less文件
+   
+   ![image-20210218190859656](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/image-20210218190859656.png)
+   
+5. 结果
+
+   ![image-20210218190917116](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/image-20210218190917116.png)
+
 ## 最后
 
 写到这里，功能总算完成了，其实再叫做命令队列执行工具已经有点超纲了，不过常用功能还是用于执行命令的
