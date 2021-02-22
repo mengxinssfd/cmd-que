@@ -105,7 +105,7 @@ async function execute(cmd: string): Promise<string> {
 }
 ```
 
-设定命令参数为-command，且必须用”” ““抱起来，多个则用“,”隔开
+设定命令参数为-command，且必须用”” ““包起来，多个则用“,”隔开
 
 > 在工具中通过-command/-cmd=启用
 
@@ -128,7 +128,7 @@ execute(args.command as string);
 
 ![image-20210218125049227](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/image-20210218125049227.png)
 
-看结果可以发现：结果马上就报错了，把它改成顺序执行
+看结果可以发现报错了，把它改成顺序执行
 
 ```typescript
 async function mulExec(command: string[]) {
@@ -641,7 +641,7 @@ import {isRuleOn, RuleOn, Rules, WatchConfig} from "../src/configFileTypes";
                         return;
                     }
                     // 如果是新增的目录，必须添加监听否则不能监听到该目录的文件变化
-                    const stat = await FS.statSync(filePath);
+                    const stat = FS.statSync(filePath);
                     if (stat.isDirectory()) {
                         foreach(filePath, config.exclude, HandleForeach);
                     }
@@ -984,6 +984,8 @@ exec(match[type as OpenTypes] || match[OpenTypes.select]);
 5. 结果
 
    ![image-20210218190917116](https://cdn.jsdelivr.net/gh/mengxinssfd/imgBase@main/img/image-20210218190917116.png)
+
+这样配置好以后，每次修改文件就不用手动开启命令而是会自动执行编译命令了
 
 ## 最后
 
