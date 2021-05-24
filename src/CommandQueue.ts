@@ -1,5 +1,6 @@
 import {
     createEnumByObj,
+    createObj,
     debouncePromise,
     executeTemplate,
     forEachDir,
@@ -30,12 +31,12 @@ enum Abb {
 const paramsAbb = createEnumByObj(Abb);
 
 export class CommandQueue {
-    private readonly params: ReturnType<typeof getParams>;
+    private readonly params: { [k: string]: string | true };
     private config!: ExecCmdConfig | WatchConfig;
     private watchedList: string[] = [];
 
     constructor() {
-        this.params = getParams();
+        this.params = createObj(Array.from(getParams().entries()));
         const time = this.getParamsValue(Abb.time);
         time && console.time("time");
         this.init().finally(() => {
