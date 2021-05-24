@@ -193,13 +193,13 @@ export async function mulExec(command: string[], path?: string) {
  * 获取命令行的参数
  * @param prefix 前缀
  */
-export function getParams(prefix = "-"): { [k: string]: string | true } {
-    return process.argv.slice(2).reduce((obj, it) => {
+export function getParams(prefix = "-"): Map<string, string | boolean> {
+    return process.argv.slice(2).reduce((map, it) => {
         const sp = it.split("=");
         const key = sp[0].replace(prefix, "");
-        obj[key] = sp[1] || true; // "",undefined,"string";前两个会转为true
-        return obj;
-    }, {} as ReturnType<typeof getParams>);
+        map.set(key, sp[1] || true);// "",undefined,"string";前两个会转为true
+        return map;
+    }, new Map());
 }
 
 export function isEmptyParams(): boolean {
@@ -215,4 +215,41 @@ export function createEnumByObj<T extends object, K extends keyof T, O extends {
 
     Object.freeze(res); // freeze值不可变
     return res;
+}
+
+/**
+ * 创建一个object 代替es6的动态key object 与Object.fromEntries一样
+ * @example
+ * const k1 = "a",k2 = "b"
+ * createObj([[k1, 1], [k2, 2]]); // {a:1, b:2}
+ * @param entries
+ * @return {{}}
+ */
+export function createObj(entries: Array<[string, any]>): { [k: string]: any } {
+    return entries.reduce((initValue, item) => {
+        if (!Array.isArray(item) || item.length < 1) throw new TypeError("createObj args type error");
+        const [key, value] = item;
+        if (key !== void 0) {
+            initValue[key] = value;
+        }
+        return initValue;
+    }, {} as any);
+}
+
+/**
+ * 数组分片
+ * @example
+ * chunk([0,1,2,3,4,5,6], 3) // => [[0,1,2],[3,4,5],[6]]
+ * @param arr
+ * @param chunkLen
+ */
+export function chunk(arr: any[], chunkLen: number) {
+    if (!Array.isArray(arr)) throw new TypeError("chunk param arr type error");
+    if (chunkLen < 1) return arr.slice();
+    const result: any[] = [];
+    let i = 0;
+    while (i < arr.length) {
+        result.push(arr.slice(i, i += chunkLen));
+    }
+    return result;
 }
