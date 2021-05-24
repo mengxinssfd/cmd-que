@@ -4,17 +4,16 @@ import {getParams, chunk, createEnumByObj, createObj, forEachDir} from "./utils"
 
 const FS = require("fs");
 
-
 // 指令全写对应的缩写
 enum Abb {
     find = "f",
     delete = "d",
     move = "m",
     copy = "c",
-    "search-flag" = "sf",
-    "search-exclude" = "se",
+    help = "h",
+    "find-flag" = "ff",
+    "find-exclude" = "fe",
 }
-
 
 const paramsAbb = createEnumByObj(Abb);
 
@@ -25,21 +24,34 @@ class FileCli {
     constructor() {
         const params = this.params = getParams();
         this.paramsObj = createObj(Array.from(params.entries()));
-        params.forEach((value, key) => {
-            if (key === "move") {
-                this.move();
-            }
-            if (key === "copy") {
-                this.copy();
-            }
-            if (key === "find") {
-                this.find();
-            }
-            if (key === "delete") {
-                this.delete();
-            }
-        });
+        const fnObj: any = {
+            move: () => this.move(),
+            copy: () => this.copy(),
+            find: () => this.find(),
+            delete: () => this.delete(),
+        };
+        if (params.size) {
+            params.forEach((value, key) => {
+                const fn = fnObj[key];
+                fn && fn();
+            });
+        } else {
+            FileCli.showHelp();
+        }
 
+    }
+
+    private static showHelp() {
+        console.log(`
+            -help/-h                帮助
+            -find/-f=               搜索文件或文件夹
+            -find-flag/-sf=         搜索文件或文件夹 /\\w+/flag
+            -find-exclude/-se=      搜索文件或文件夹 忽略文件夹 多个用逗号(,)隔开
+            -open/-o=               打开资源管理器并选中文件或文件夹
+            -open-type/-ot=         打开资源管理器并选中文件或文件夹
+            -delete/-d              删除文件或文件夹
+            -copy/-c                复制文件或文件夹
+        `);
     }
 
     getParams(key: "move" | "copy"): [from: string, to: string][] {
@@ -82,8 +94,8 @@ class FileCli {
 
     find() {
         const search = this.getParamsValue(Abb.find);
-        const flag = this.getParamsValue(Abb["search-flag"]);
-        const se = this.getParamsValue(Abb["search-exclude"]);
+        const flag = this.getParamsValue(Abb["find-flag"]);
+        const se = this.getParamsValue(Abb["find-exclude"]);
         if (search === true || search === undefined || flag === true || se === true) {
             throw new TypeError();
         }
