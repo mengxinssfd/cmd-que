@@ -24,8 +24,6 @@ enum Abb {
     help = "h",
     time = "t",
     command = "cmd",
-    open = "o",
-    "open-type" = "ot"
 }
 
 const paramsAbb = createEnumByObj(Abb);
@@ -49,13 +47,6 @@ export class CommandQueue {
     private async init() {
         if (isEmptyParams() || this.getParamsValue(Abb.help)) {
             return CommandQueue.showHelp();
-        }
-
-        if (this.getParamsValue(Abb.search)) {
-            return this.search();
-        }
-        if (this.getParamsValue(Abb.open)) {
-            return this.open();
         }
 
         const cmd = this.getParamsValue(Abb.command);
@@ -114,21 +105,6 @@ export class CommandQueue {
         return forEachDir(path, exclude, (path: string, basename: string, isDir: boolean) => {
             return cb(path, basename, isDir);
         }, Boolean(this.params.log)); // 有可能会输入-log=*
-    }
-
-    private search() {
-        const search = this.getParamsValue(Abb.search);
-        const flag = this.getParamsValue(Abb["search-flag"]);
-        const se = this.getParamsValue(Abb["search-exclude"]);
-        if (search === true || search === undefined || flag === true || se === true) {
-            throw new TypeError();
-        }
-        const reg = new RegExp(search, flag);
-        console.log("search", reg);
-        const exclude = se?.split(",").filter(i => i).map(i => new RegExp(i));
-        return this.foreach("./", exclude, (path, basename) => {
-            if (reg.test(basename)) console.log("result ", path);
-        });
     }
 
 
@@ -218,11 +194,6 @@ export class CommandQueue {
         console.log(`
             -config/-c=             配置的路径
             -help/-h                帮助
-            -search/-s=             搜索文件或文件夹
-            -search-flag/-sf=       搜索文件或文件夹 /\\w+/flag
-            -search-exclude/-se=    搜索文件或文件夹 忽略文件夹 多个用逗号(,)隔开
-            -open/-o=               打开资源管理器并选中文件或文件夹
-            -open-type/-ot=         打开资源管理器并选中文件或文件夹
             -watch/-w               监听文件改变 与-config搭配使用
             -log                    遍历文件夹时是否显示遍历log
             -time/t                 显示执行代码所花费的时间
@@ -230,32 +201,5 @@ export class CommandQueue {
         `);
     }
 
-    // 好处：普通的命令不能打开./
-    private open() {
-        enum OpenTypes {
-            select = "select",
-            cmd = "cmd",
-            run = "run",
-        }
 
-        type ExecParams = [string, string[]];
-
-        const open = this.getParamsValue(Abb.open)!;
-        const path = Path.resolve(process.cwd(), open === true ? "./" : open);
-        const stat = require("fs").statSync(path);
-        const isDir = stat.isDirectory();
-        const ot = this.getParamsValue(Abb["open-type"]);
-
-        const type: string = !ot || ot === true ? OpenTypes.select : ot;
-        const spawnSync = require('child_process').spawnSync;
-        const match: { [k in OpenTypes]: ExecParams } = {
-            // 运行一次就会打开一个资源管理器，不能只打开一个相同的
-            [OpenTypes.select]: ["explorer", [`/select,"${path}"`]],
-            [OpenTypes.run]: ['start', [path]],
-            [OpenTypes.cmd]: ["start", ["cmd", "/k", `"cd ${isDir ? path : Path.dirname(path)}"`]],
-        };
-        const exec = ([command, path]: ExecParams) => spawnSync(command, path, {shell: true});
-        console.log(path);
-        exec(match[type as OpenTypes] || match[OpenTypes.select]);
-    }
 }

@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.chunk = exports.createEnumByObj = exports.isEmptyParams = exports.getParams = exports.mulExec = exports.executeTemplate = exports.execute = exports.findDirBFS = exports.findDir = exports.forEachDir = exports.debouncePromise = void 0;
-const fs = require('fs');
-const Path = require('path');
-const childProcess = require('child_process');
+exports.copyDir = exports.chunk = exports.createObj = exports.createEnumByObj = exports.isEmptyParams = exports.getParams = exports.mulExec = exports.executeTemplate = exports.execute = exports.findDirBFS = exports.findDir = exports.forEachDirBfs = exports.forEachDir = exports.debouncePromise = void 0;
+const fs = require("fs");
+const Path = require("path");
+const childProcess = require("child_process");
 const util = require("util");
 const exec = util.promisify(childProcess.exec);
 function debouncePromise(callback, delay) {
@@ -26,10 +26,10 @@ function debouncePromise(callback, delay) {
     };
 }
 exports.debouncePromise = debouncePromise;
-process.on('exit', function (code) {
+process.on("exit", function (code) {
     // console.log(code);
 });
-process.stdin.setEncoding('utf8');
+process.stdin.setEncoding("utf8");
 /**
  * 遍历文件夹
  * @param path
@@ -67,6 +67,47 @@ async function forEachDir(path, exclude = [], cb, showLog = false) {
     }
 }
 exports.forEachDir = forEachDir;
+/**
+ * 遍历文件夹
+ * @param path
+ * @param exclude
+ * @param cb
+ * @param showLog
+ */
+async function forEachDirBfs(path, exclude = [], cb, showLog = false) {
+    showLog && console.log("遍历", path);
+    try {
+        const queue = [path];
+        while (queue.length) {
+            const path = queue.shift();
+            const stats = fs.statSync(path);
+            const isDir = stats.isDirectory();
+            const basename = Path.basename(path);
+            const isExclude = () => {
+                const raw = String.raw `${path}`;
+                return exclude.some((item) => item.test(raw));
+            };
+            if (isDir && isExclude())
+                continue;
+            const callback = cb || ((path, isDir) => undefined);
+            const isStop = await callback(path, basename, isDir);
+            if (!isDir || isStop === true) {
+                continue;
+            }
+            const dir = fs.readdirSync(path);
+            for (const d of dir) {
+                const p = Path.resolve(path, d);
+                queue.push(p);
+            }
+        }
+    }
+    catch (e) {
+        showLog && console.log("forEachDirBfs error", path, e);
+        // 不能抛出异常，否则遍历到System Volume Information文件夹报错会中断遍历
+        // return Promise.reject(e);
+    }
+}
+exports.forEachDirBfs = forEachDirBfs;
 async function findDir(path, exclude, cb) {
     console.log("findDir", path);
     const v = await cb(path);
@@ -118,7 +159,7 @@ async function findDirBFS(path, exclude, cb) {
 exports.findDirBFS = findDirBFS;
 // 不足10前面加0
 function addZero(time) {
-    return time > 9 ? String(time) : ('0' + time);
+    return time > 9 ? String(time) : ("0" + time);
 }
 function getTime() {
     const date = new Date();
@@ -128,10 +169,10 @@ function getTime() {
     return `${addZero(h)}:${addZero(m)}:${addZero(s)}`;
 }
 async function execute(cmd) {
-    console.log(getTime(), '执行"' + cmd + '"命令...');
+    console.log(getTime(), "执行\"" + cmd + "\"命令...");
     // try {
     const { stdout } = await exec(cmd);
-    console.log('success!');
+    console.log("success!");
     // console.log('\n\n*************************命令输出start*************************');
     console.log(stdout);
     // console.log('*************************命令输出end*******************\n\n');
@@ -156,7 +197,7 @@ function executeTemplate(command, path = "") {
         "\\$FileNameWithoutAllExtensions\\$": basename.split(".")[0],
         "\\$FileDir\\$": Path.dirname(path),
         "\\$Cwd\\$": cwd,
-        "\\$SourceFileDir\\$": __dirname, // 代码所在路径
+        "\\$SourceFileDir\\$": __dirname,
     };
     const mapKeys = Object.keys(map);
     command = mapKeys.reduce((c, k) => c.replace(new RegExp(k, "g"), map[k]), String.raw `${command}`);
@@ -174,12 +215,12 @@ exports.mulExec = mulExec;
  * @param prefix 前缀
  */
 function getParams(prefix = "-") {
-    return process.argv.slice(2).reduce((obj, it) => {
+    return process.argv.slice(2).reduce((map, it) => {
         const sp = it.split("=");
         const key = sp[0].replace(prefix, "");
-        obj[key] = sp[1] || true; // "",undefined,"string";前两个会转为true
-        return obj;
-    }, {});
+        map.set(key, sp[1] || true); // "",undefined,"string";前两个会转为true
+        return map;
+    }, new Map());
 }
 exports.getParams = getParams;
 function isEmptyParams() {
@@ -197,6 +238,26 @@ function createEnumByObj(obj) {
     return res;
 }
 exports.createEnumByObj = createEnumByObj;
+/**
+ * 创建一个object 代替es6的动态key object 与Object.fromEntries一样
+ * @example
+ * const k1 = "a",k2 = "b"
+ * createObj([[k1, 1], [k2, 2]]); // {a:1, b:2}
+ * @param entries
+ * @return {{}}
+ */
+function createObj(entries) {
+    return entries.reduce((initValue, item) => {
+        if (!Array.isArray(item) || item.length < 1)
+            throw new TypeError("createObj args type error");
+        const [key, value] = item;
+        if (key !== void 0) {
+            initValue[key] = value;
+        }
+        return initValue;
+    }, {});
+}
+exports.createObj = createObj;
 /**
  * 数组分片
  * @example
@@ -217,3 +278,6 @@ function chunk(arr, chunkLen) {
     return result;
 }
 exports.chunk = chunk;
+function copyDir(path) {
+}
+exports.copyDir = copyDir;

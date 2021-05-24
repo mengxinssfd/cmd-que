@@ -52,15 +52,13 @@ var Abb;
     Abb["help"] = "h";
     Abb["time"] = "t";
     Abb["command"] = "cmd";
-    Abb["open"] = "o";
-    Abb["open-type"] = "ot";
 })(Abb || (Abb = {}));
 var paramsAbb = utils_1.createEnumByObj(Abb);
 var CommandQueue = /** @class */ (function () {
     function CommandQueue() {
         var _this = this;
         this.watchedList = [];
-        this.params = utils_1.getParams();
+        this.params = utils_1.createObj(Array.from(utils_1.getParams().entries()));
         var time = this.getParamsValue(Abb.time);
         time && console.time("time");
         this.init()["finally"](function () {
@@ -77,12 +75,6 @@ var CommandQueue = /** @class */ (function () {
                     case 0:
                         if (utils_1.isEmptyParams() || this.getParamsValue(Abb.help)) {
                             return [2 /*return*/, CommandQueue.showHelp()];
-                        }
-                        if (this.getParamsValue(Abb.search)) {
-                            return [2 /*return*/, this.search()];
-                        }
-                        if (this.getParamsValue(Abb.open)) {
-                            return [2 /*return*/, this.open()];
                         }
                         cmd = this.getParamsValue(Abb.command);
                         if (cmd) {
@@ -164,21 +156,6 @@ var CommandQueue = /** @class */ (function () {
         return utils_1.forEachDir(path, exclude, function (path, basename, isDir) {
             return cb(path, basename, isDir);
         }, Boolean(this.params.log)); // 有可能会输入-log=*
-    };
-    CommandQueue.prototype.search = function () {
-        var search = this.getParamsValue(Abb.search);
-        var flag = this.getParamsValue(Abb["search-flag"]);
-        var se = this.getParamsValue(Abb["search-exclude"]);
-        if (search === true || search === undefined || flag === true || se === true) {
-            throw new TypeError();
-        }
-        var reg = new RegExp(search, flag);
-        console.log("search", reg);
-        var exclude = se === null || se === void 0 ? void 0 : se.split(",").filter(function (i) { return i; }).map(function (i) { return new RegExp(i); });
-        return this.foreach("./", exclude, function (path, basename) {
-            if (reg.test(basename))
-                console.log("result ", path);
-        });
     };
     CommandQueue.prototype.test = function (eventName, path, basename) {
         var _a;
@@ -301,36 +278,7 @@ var CommandQueue = /** @class */ (function () {
         });
     };
     CommandQueue.showHelp = function () {
-        console.log("\n            -config/-c=             \u914D\u7F6E\u7684\u8DEF\u5F84\n            -help/-h                \u5E2E\u52A9\n            -search/-s=             \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939\n            -search-flag/-sf=       \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 /\\w+/flag\n            -search-exclude/-se=    \u641C\u7D22\u6587\u4EF6\u6216\u6587\u4EF6\u5939 \u5FFD\u7565\u6587\u4EF6\u5939 \u591A\u4E2A\u7528\u9017\u53F7(,)\u9694\u5F00\n            -open/-o=               \u6253\u5F00\u8D44\u6E90\u7BA1\u7406\u5668\u5E76\u9009\u4E2D\u6587\u4EF6\u6216\u6587\u4EF6\u5939\n            -open-type/-ot=         \u6253\u5F00\u8D44\u6E90\u7BA1\u7406\u5668\u5E76\u9009\u4E2D\u6587\u4EF6\u6216\u6587\u4EF6\u5939\n            -watch/-w               \u76D1\u542C\u6587\u4EF6\u6539\u53D8 \u4E0E-config\u642D\u914D\u4F7F\u7528\n            -log                    \u904D\u5386\u6587\u4EF6\u5939\u65F6\u662F\u5426\u663E\u793A\u904D\u5386log\n            -time/t                 \u663E\u793A\u6267\u884C\u4EE3\u7801\u6240\u82B1\u8D39\u7684\u65F6\u95F4\n            -command/-cmd=          \u901A\u8FC7\u547D\u4EE4\u884C\u6267\u884C\u547D\u4EE4 \u591A\u4E2A\u5219\u7528\u9017\u53F7(,)\u9694\u5F00 \u5FC5\u987B\u8981\u7528\u5F15\u53F7\u5F15\u8D77\u6765\n        ");
-    };
-    // 好处：普通的命令不能打开./
-    CommandQueue.prototype.open = function () {
-        var _a;
-        var OpenTypes;
-        (function (OpenTypes) {
-            OpenTypes["select"] = "select";
-            OpenTypes["cmd"] = "cmd";
-            OpenTypes["run"] = "run";
-        })(OpenTypes || (OpenTypes = {}));
-        var open = this.getParamsValue(Abb.open);
-        var path = Path.resolve(process.cwd(), open === true ? "./" : open);
-        var stat = require("fs").statSync(path);
-        var isDir = stat.isDirectory();
-        var ot = this.getParamsValue(Abb["open-type"]);
-        var type = !ot || ot === true ? OpenTypes.select : ot;
-        var spawnSync = require('child_process').spawnSync;
-        var match = (_a = {},
-            // 运行一次就会打开一个资源管理器，不能只打开一个相同的
-            _a[OpenTypes.select] = ["explorer", ["/select,\"" + path + "\""]],
-            _a[OpenTypes.run] = ['start', [path]],
-            _a[OpenTypes.cmd] = ["start", ["cmd", "/k", "\"cd " + (isDir ? path : Path.dirname(path)) + "\""]],
-            _a);
-        var exec = function (_a) {
-            var command = _a[0], path = _a[1];
-            return spawnSync(command, path, { shell: true });
-        };
-        console.log(path);
-        exec(match[type] || match[OpenTypes.select]);
+        console.log("\n            -config/-c=             \u914D\u7F6E\u7684\u8DEF\u5F84\n            -help/-h                \u5E2E\u52A9\n            -watch/-w               \u76D1\u542C\u6587\u4EF6\u6539\u53D8 \u4E0E-config\u642D\u914D\u4F7F\u7528\n            -log                    \u904D\u5386\u6587\u4EF6\u5939\u65F6\u662F\u5426\u663E\u793A\u904D\u5386log\n            -time/t                 \u663E\u793A\u6267\u884C\u4EE3\u7801\u6240\u82B1\u8D39\u7684\u65F6\u95F4\n            -command/-cmd=          \u901A\u8FC7\u547D\u4EE4\u884C\u6267\u884C\u547D\u4EE4 \u591A\u4E2A\u5219\u7528\u9017\u53F7(,)\u9694\u5F00 \u5FC5\u987B\u8981\u7528\u5F15\u53F7\u5F15\u8D77\u6765\n        ");
     };
     return CommandQueue;
 }());

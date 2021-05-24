@@ -1,9 +1,8 @@
-const fs = require('fs');
-const Path = require('path');
-const childProcess = require('child_process');
+const fs = require("fs");
+const Path = require("path");
+const childProcess = require("child_process");
 const util = require("util");
 const exec = util.promisify(childProcess.exec);
-
 
 export function debouncePromise<T, CB extends (...args: any[]) => Promise<T>>(callback: CB, delay: number): CB {
     let timer: any = null;
@@ -26,11 +25,10 @@ export function debouncePromise<T, CB extends (...args: any[]) => Promise<T>>(ca
     } as CB;
 }
 
-process.on('exit', function (code) {
+process.on("exit", function (code) {
     // console.log(code);
 });
-process.stdin.setEncoding('utf8');
-
+process.stdin.setEncoding("utf8");
 
 /**
  * 遍历文件夹
@@ -72,6 +70,57 @@ export async function forEachDir(
         }
     } catch (e) {
         showLog && console.log("forEachDir error", path, e);
+        // 不能抛出异常，否则遍历到System Volume Information文件夹报错会中断遍历
+        // return Promise.reject(e);
+    }
+}
+
+/**
+ * 遍历文件夹
+ * @param path
+ * @param exclude
+ * @param cb
+ * @param showLog
+ */
+export async function forEachDirBfs(
+    path: string,
+    exclude: RegExp[] = [],
+    cb?: (path: string, basename: string, isDir: boolean) => true | void | Promise<true | unknown>,
+    showLog = false,
+) {
+    showLog && console.log("遍历", path);
+    try {
+        const queue = [path];
+
+        while (queue.length) {
+            const path = queue.shift()!;
+            const stats = fs.statSync(path);
+            const isDir = stats.isDirectory();
+            const basename = Path.basename(path);
+
+            const isExclude = () => {
+                const raw = String.raw`${path}`;
+                return exclude.some((item) => item.test(raw));
+            };
+
+            if (isDir && isExclude()) continue;
+
+            const callback = cb || ((path, isDir) => undefined);
+            const isStop = await callback(path, basename, isDir);
+
+            if (!isDir || isStop === true) {
+                continue;
+            }
+
+            const dir = fs.readdirSync(path);
+            for (const d of dir) {
+                const p = Path.resolve(path, d);
+                queue.push(p);
+            }
+        }
+
+    } catch (e) {
+        showLog && console.log("forEachDirBfs error", path, e);
         // 不能抛出异常，否则遍历到System Volume Information文件夹报错会中断遍历
         // return Promise.reject(e);
     }
@@ -131,10 +180,9 @@ export async function findDirBFS(path: string, exclude: RegExp[], cb: (path: str
     return null;
 }
 
-
 // 不足10前面加0
 function addZero(time: number): string {
-    return time > 9 ? String(time) : ('0' + time);
+    return time > 9 ? String(time) : ("0" + time);
 }
 
 function getTime(): string {
@@ -145,12 +193,11 @@ function getTime(): string {
     return `${addZero(h)}:${addZero(m)}:${addZero(s)}`;
 }
 
-
 export async function execute(cmd: string): Promise<string> {
-    console.log(getTime(), '执行"' + cmd + '"命令...');
+    console.log(getTime(), "执行\"" + cmd + "\"命令...");
     // try {
     const {stdout} = await exec(cmd);
-    console.log('success!');
+    console.log("success!");
     // console.log('\n\n*************************命令输出start*************************');
     console.log(stdout);
     // console.log('*************************命令输出end*******************\n\n');
@@ -252,4 +299,8 @@ export function chunk(arr: any[], chunkLen: number) {
         result.push(arr.slice(i, i += chunkLen));
     }
     return result;
+}
+
+export function copyDir(path: string) {
+
 }
