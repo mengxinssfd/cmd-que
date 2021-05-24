@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "target": "esNext",
+    "module": "CommonJS",
+    "target": "ES2017",
     "sourceMap": false,
     "strict": true,
     "experimentalDecorators": true
