@@ -4,10 +4,12 @@
   "description": "command queue",
   "main": "index.js",
   "bin": {
-    "cmd-que": "bin/index"
+    "cmd-cli": "bin/index",
+    "file-cli": "bin/index"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc src"
   },
   "repository": {
     "type": "git",
@@ -25,5 +27,8 @@
   "homepage": "https://github.com/mengxinssfd/cmd-que#readme",
   "devDependencies": {
     "@types/node": "^14.14.22"
+  },
+  "dependencies": {
+    "@mxssfd/ts-utils": "^2.11.11"
   }
 }
