@@ -1,8 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 // const getParams = require("./utils").getParams;
 // tsc src/file.ts --target es2017 --module commonjs
-const utils_1 = require("./utils");
+import { chunk, createEnumByObj, createObj } from "@mxssfd/ts-utils/";
+import { getParams, forEachDir, forEachDirBfs } from "./utils";
 const FS = require("fs");
 const Path = require("path");
 // 指令全写对应的缩写
@@ -18,11 +17,11 @@ var Abb;
     Abb["find-flag"] = "ff";
     Abb["find-exclude"] = "fe";
 })(Abb || (Abb = {}));
-const paramsAbb = utils_1.createEnumByObj(Abb);
+const paramsAbb = createEnumByObj(Abb);
 class FileCli {
     constructor() {
-        const params = this.params = utils_1.getParams();
-        this.paramsObj = utils_1.createObj(Array.from(params.entries()));
+        const params = this.params = getParams();
+        this.paramsObj = createObj(Array.from(params.entries()));
         const fnObj = {
             move: () => this.move(),
             copy: () => this.copy(),
@@ -87,7 +86,7 @@ class FileCli {
         if (value === true)
             throw new TypeError();
         const arr = value.split(",");
-        return utils_1.chunk(arr, 2);
+        return chunk(arr, 2);
     }
     move() {
         const list = this.getParams("move");
@@ -105,7 +104,7 @@ class FileCli {
                 console.error(from + " not exists");
                 return;
             }
-            utils_1.forEachDirBfs(from, [], (path, basename, isDir) => {
+            forEachDirBfs(from, [], (path, basename, isDir) => {
                 const diff = path.replace(from, "").substring(1);
                 const p = Path.resolve(to, diff);
                 if (isDir) {
@@ -125,7 +124,7 @@ class FileCli {
         return params[key] || params[pAbb[key]];
     }
     foreach(path, exclude = [], cb) {
-        return utils_1.forEachDir(path, exclude, (path, basename, isDir) => {
+        return forEachDir(path, exclude, (path, basename, isDir) => {
             return cb(path, basename, isDir);
         }, Boolean(this.paramsObj.log)); // 有可能会输入-log=*
     }

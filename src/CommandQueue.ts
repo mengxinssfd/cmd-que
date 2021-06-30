@@ -1,6 +1,5 @@
 import {
     createEnumByObj,
-    createObj,
     debouncePromise,
     executeTemplate,
     forEachDir,
@@ -8,7 +7,7 @@ import {
     isEmptyParams,
     mulExec,
 } from "./utils";
-
+import {createObj} from "@mxssfd/ts-utils/lib-cjs/object"
 import {WatchConfig, ExecCmdConfig, isRuleOn, RuleOn} from "./configFileTypes";
 
 const Path = require("path");

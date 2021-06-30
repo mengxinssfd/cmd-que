@@ -3,6 +3,7 @@
   "version": "2.0.1",
   "description": "command queue",
   "main": "index.js",
+  "type": "module",
   "bin": {
     "cmd-cli": "bin/index",
     "file-cli": "bin/file"
@@ -29,6 +30,6 @@
     "@types/node": "^14.14.22"
   },
   "dependencies": {
-    "@mxssfd/ts-utils": "^2.11.11"
+    "@mxssfd/ts-utils": "^2.11.15"
   }
 }

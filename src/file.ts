@@ -1,6 +1,7 @@
 // const getParams = require("./utils").getParams;
 // tsc src/file.ts --target es2017 --module commonjs
-import {getParams, chunk, createEnumByObj, createObj, forEachDir, forEachDirBfs} from "./utils";
+import {chunk, createEnumByObj, createObj} from "@mxssfd/ts-utils/";
+import {getParams, forEachDir, forEachDirBfs} from "./utils";
 
 const FS = require("fs");
 const Path = require("path");

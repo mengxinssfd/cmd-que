@@ -1,16 +1,19 @@
 {
   "compilerOptions": {
-    "module": "CommonJS",
+    "module": "ESNext",
     "target": "ES2017",
     "sourceMap": false,
+    "allowJs": true,
     "strict": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "moduleResolution": "Node"
   },
   "lib": [
     "es6",
     "ESNext"
   ],
-  "exclude": [
-    "node_modules"
+  "include": [
+    "src"
   ]
 }
